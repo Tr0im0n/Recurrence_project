@@ -1,3 +1,6 @@
 # Recurrence_project
 Year 2, period 6 project
-, Tom Zoon :)
+
+Group Members:
+Tom Zoon :)
+Martina Kiewek Enrich
