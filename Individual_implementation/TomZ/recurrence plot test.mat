@@ -1,0 +1,47 @@
+% Read the dataset from a CSV file
+data = csvread('data.csv'); % Replace 'data.csv' with the path to your CSV file
+
+% Define the indices or data points to highlight (customize as needed)
+highlightIndices = [10, 20, 30]; % Example indices to highlight
+
+% Plot the time series
+figure;
+subplot(2, 1, 1); % Create a subplot for the time series
+plot(data, '-o'); % Plot the time series with markers
+
+% Highlight specific points in the time series
+hold on;
+plot(highlightIndices, data(highlightIndices), 'ro', 'MarkerSize', 10, 'LineWidth', 2); % Highlighted points
+hold off;
+title('Time Series');
+xlabel('Time');
+ylabel('Value');
+
+% Compute the recurrence plot
+N = length(data);
+recurrenceMatrix = zeros(N, N);
+epsilon = 0.1 * (max(data) - min(data)); % Define the threshold for recurrence (customize as needed)
+
+for i = 1:N
+    for j = 1:N
+        if abs(data(i) - data(j)) < epsilon
+            recurrenceMatrix(i, j) = 1;
+        end
+    end
+end
+
+% Plot the recurrence plot
+subplot(2, 1, 2); % Create a subplot for the recurrence plot
+imagesc(recurrenceMatrix); % Display the recurrence plot as an image
+colormap(gray); % Use a grayscale colormap
+title('Recurrence Plot');
+xlabel('Time');
+ylabel('Time');
+
+% Highlight specific points in the recurrence plot
+hold on;
+for k = 1:length(highlightIndices)
+    plot(highlightIndices(k), highlightIndices, 'ro', 'MarkerSize', 10, 'LineWidth', 2); % Highlighted points in the recurrence plot
+    plot(highlightIndices, highlightIndices(k), 'ro', 'MarkerSize', 10, 'LineWidth', 2); % Highlighted points in the recurrence plot
+end
+hold off;
