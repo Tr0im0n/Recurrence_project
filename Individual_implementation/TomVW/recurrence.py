@@ -57,7 +57,7 @@ def main():
     time_obj = TimeObject()
     my_signal = create_signal1(False)
     time_obj.new()
-    my_length_matrix = get_length_matrix(my_signal)
+    my_length_matrix = get_length_matrix(my_signal, True)
     time_obj.new()
     my_recurrence_matrix = recurrence_matrix(my_length_matrix)
     time_obj.new()
