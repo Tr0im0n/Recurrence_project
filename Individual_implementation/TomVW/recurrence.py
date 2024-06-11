@@ -7,10 +7,13 @@ import matplotlib.pyplot as plt
 class TimeObject:
     def __init__(self):
         self.last_time = time.time()
+        self.time_list = []
 
     def new(self):
         new_time = time.time()
-        print(new_time - self.last_time)
+        duration = new_time - self.last_time
+        print(f"Duration: {duration}")
+        self.time_list.append(duration)
         self.last_time = new_time
 
 
@@ -61,7 +64,7 @@ def main():
     time_obj.new()
     my_recurrence_matrix = recurrence_matrix(my_length_matrix)
     time_obj.new()
-    plt.imshow(my_recurrence_matrix[:990, :990], cmap="gray")
+    plt.imshow(my_recurrence_matrix[:990, :990], cmap="gray", origin="lower")
     plt.title("Clipped recurrence plot")
     plt.show()
 
