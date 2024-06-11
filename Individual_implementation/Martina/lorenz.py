@@ -6,19 +6,6 @@ from scipy.spatial.distance import pdist, squareform
 
 
 def lorenz(xyz, *, s=10, r=28, b=2.667):
-    """
-    Parameters
-    ----------
-    xyz : array-like, shape (3,)
-       Point of interest in three-dimensional space.
-    s, r, b : float
-       Parameters defining the Lorenz attractor.
-
-    Returns
-    -------
-    xyz_dot : array, shape (3,)
-       Values of the Lorenz attractor's partial derivatives at *xyz*.
-    """
     x, y, z = xyz
     x_dot = s*(y - x)
     y_dot = r*x - y - x*z
@@ -30,7 +17,7 @@ def get_xyzs_lorenz():
     num_steps = 10000
 
     xyzs = np.empty((num_steps + 1, 3))  # Need one more for the initial values
-    xyzs[0] = (0., 1., 1.05)  # Set initial values
+    xyzs[0] = (1., 1., 1.)  # Set initial values
     # Step through "time", calculating the partial derivatives at the current point
     # and using them to estimate the next point
     for i in range(num_steps):
@@ -49,12 +36,38 @@ def get_xyzs_lorenz():
 
     return(xyzs)
 
+
+def RP_one_coord(xyzs, coord=0):
+    data = xyzs[:,coord]
+
+    epsilon = 1
+    m = 5
+    T = 5
+
+    num_vectors = len(data) - (m - 1) * T
+    vectors = np.array([data[t:t + m * T:T] for t in range(num_vectors)])
+    D = squareform(pdist(vectors, metric='euclidean'))
+    hit = np.argwhere(D < epsilon)
+
+    x_rec, y_rec = hit[:, 0], hit[:, 1]
+
+    # Plot points of recurrence
+    plt.figure(figsize=(10, 8))
+    plt.scatter(x_rec, y_rec, s=1)
+    plt.title('Recurrence Plot')
+    plt.xlabel('Vector Index')
+    plt.ylabel('Vector Index')
+    plt.show()
+
 xyzs = get_xyzs_lorenz()
+# RP_one_coord(xyzs, 0)
 
 num_vectors = np.shape(xyzs)[0]
 D = squareform(pdist(xyzs, metric='euclidean'))
 
-epsilon = 3
+# set epsilon to 10% of max phase space diameter
+D_max = np.max(D)
+epsilon = 0.1*D_max
 
 # Find points of recurrence
 hit = np.argwhere(D < epsilon)
@@ -69,7 +82,7 @@ plt.colorbar()
 plt.title('Distance Matrix')
 plt.xlabel('Vector Index')
 plt.ylabel('Vector Index')
-plt.show()
+# plt.show()
 
 # Plot points of recurrence
 plt.figure(figsize=(10, 8))
@@ -80,6 +93,40 @@ plt.ylabel('Vector Index')
 plt.show()
 
 
-
-
+# Another method of making RP for lorenz system... very different result.
+# from scipy.integrate import solve_ivp
+#
+# # Lorenz system parameters
+# sigma = 10.0
+# beta = 8.0 / 3.0
+# rho = 28.0
+#
+# def lorenz(t, state):
+#     x, y, z = state
+#     return [sigma * (y - x), x * (rho - z) - y, x * y - beta * z]
+#
+# # Initial conditions
+# initial_state = [1.0, 1.0, 1.0]
+# t_span = [0, 25]
+# t_eval = np.linspace(t_span[0], t_span[1], 1000)
+#
+# # Solve Lorenz system
+# sol = solve_ivp(lorenz, t_span, initial_state, t_eval=t_eval)
+# X = sol.y.T  # Solution array
+#
+# # Compute distance matrix
+# D = squareform(pdist(X, metric='euclidean'))
+#
+# # Define a threshold
+# epsilon = 2.0
+#
+# # Create recurrence matrix
+# R = (D <= epsilon).astype(int)
+#
+# # Plot the recurrence plot
+# plt.imshow(R, cmap='binary', origin='lower')
+# plt.xlabel('Time i')
+# plt.ylabel('Time j')
+# plt.title('Recurrence Plot for Lorenz System')
+# plt.show()
 
