@@ -13,6 +13,9 @@ length = 20
 x = np.arange(-length, length, 0.1)
 y = np.sin(x)
 
+plt.plot(y)
+plt.show()
+
 # y = [1,2,3,4,5,6,7,8,9,10]
 
 def rp_from_timeseries(epsilon, m, T):
@@ -100,17 +103,17 @@ def determinism(D, x_rec, y_rec):
 
     print(lengths)
 
-    plt.boxplot(lengths)
-    plt.title("Lengths of Diagonal Lines in Recurrence Plot")
-    plt.xlabel("Line Lengths")
-    plt.ylabel("Frequency")
-    plt.show()
+    # plt.boxplot(lengths)
+    # plt.title("Lengths of Diagonal Lines in Recurrence Plot")
+    # plt.xlabel("Line Lengths")
+    # plt.ylabel("Frequency")
+    # plt.show()
 
 
 # Define parameters
 epsilon = .11
-m = 5              # embedding dimension
-T = 1               # time delay
+m = 6            # embedding dimension
+T = 3               # time delay
 
 D, x_rec, y_rec = rp_from_timeseries(epsilon, m, T)
 # recurrence_rate(D)
