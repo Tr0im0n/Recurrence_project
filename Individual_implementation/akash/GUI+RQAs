@@ -95,11 +95,13 @@ class LivePlotAppLorenz:
 
     def calculate_rqa_measures(self, recurrence_matrix):
         num_points = recurrence_matrix.shape[0]
-        
+        #for more details look at rqas overview document
+
         # Calculate recurrence rate (RR)
         RR = np.sum(recurrence_matrix) / (num_points ** 2)
 
         # Calculate diagonal line structures
+        #not excluding main diagonal
         diagonals = [np.diag(recurrence_matrix, k) for k in range(-num_points + 1, num_points)]
         diag_lengths = [len(list(group)) for diag in diagonals for k, group in groupby(diag) if k == 1]
 
@@ -110,12 +112,13 @@ class LivePlotAppLorenz:
         L = np.mean([l for l in diag_lengths if l >= 2]) if diag_lengths else 0
 
         # Calculate Lmax
-        Lmax = max(diag_lengths) if diag_lengths else 0
+        Lmax = max(diag_lengths) if diag_lengths else 0 #of main diag so falde
 
         # Calculate DIV
         DIV = 1 / Lmax if Lmax != 0 else 0
 
-        # Calculate ENTR
+        # Calculate ENTR 
+        #does not yet work
         counts = np.bincount(diag_lengths)
         probs = counts / np.sum(counts)
         ENTR = -np.sum(probs * np.log(probs)) if np.sum(counts) > 0 else 0
