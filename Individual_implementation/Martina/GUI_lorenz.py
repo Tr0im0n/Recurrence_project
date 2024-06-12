@@ -38,19 +38,20 @@ class LivePlotAppSine:
         self.change_frequency()
 
     def update_plot(self):
-        if self.is_running:
-            self.time_step += self.dt
-            self.y_data = np.sin(self.x_data * self.freq + self.time_step)
-            self.ax1.clear()
-            self.ax1.plot(self.x_data, self.y_data, lw=2)
-            self.ax1.set_title("Live Sine Wave")
-            self.ax1.set_xlabel("X Axis")
-            self.ax1.set_ylabel("sin(X + t)")
+        if not self.is_running:
+            return
+        self.time_step += self.dt
+        self.y_data = np.sin(self.x_data * self.freq + self.time_step)
+        self.ax1.clear()
+        self.ax1.plot(self.x_data, self.y_data, lw=2)
+        self.ax1.set_title("Live Sine Wave")
+        self.ax1.set_xlabel("X Axis")
+        self.ax1.set_ylabel("sin(X + t)")
 
-            self.update_recurrence_plot()
+        self.update_recurrence_plot()
 
-            self.canvas.draw()
-            self.root.after(100, self.update_plot)
+        self.canvas.draw()
+        self.root.after(100, self.update_plot)
 
     def change_frequency(self):
         if self.is_running:
@@ -64,7 +65,6 @@ class LivePlotAppSine:
         T = 3
         num_vectors = len(self.y_data) - (m - 1) * T
         vectors = np.array([self.y_data[t:t + m * T:T] for t in range(num_vectors)])
-
 
         D = np.zeros((num_vectors, num_vectors))
         for i in range(num_vectors):
@@ -81,15 +81,16 @@ class LivePlotAppSine:
         self.ax2.set_ylabel("Vector Index")
 
     def start(self):
-        if not self.is_running:
-            print('1')
-            self.is_running = True
-            print('2')
-            self.update_plot()
-            print('3')
-            self.update_recurrence_plot()
-            print('4')
-            self.change_frequency()
+        if self.is_running:
+            return
+        print('1')
+        self.is_running = True
+        print('2')
+        self.update_plot()
+        print('3')
+        self.update_recurrence_plot()
+        print('4')
+        self.change_frequency()
 
     def stop(self):
         self.is_running = False
@@ -129,24 +130,25 @@ class LivePlotAppLorenz:
         self.dt = 0.01
 
     def update_plot(self):
-        if self.is_running:
-            print('hello')
-            new_point = self.xyzs[-1] + lorenz(self.xyzs[-1]) * self.dt
-            print(new_point)
-            print(self.xyzs)
-            self.xyzs = np.append(self.xyzs, [new_point], axis=0)
-            self.ax1.clear()
-            self.ax1.plot(*self.xyzs.T, lw=0.5)
-            self.ax1.set_title("Lorenz Attractor")
-            self.ax1.set_xlabel("X Axis")
-            self.ax1.set_ylabel("Y Axis")
-            self.ax1.set_zlabel("Z Axis")
+        if not self.is_running:
+            return
+        print('hello')
+        new_point = self.xyzs[-1] + lorenz(self.xyzs[-1]) * self.dt
+        print(new_point)
+        print(self.xyzs)
+        self.xyzs = np.append(self.xyzs, [new_point], axis=0)
+        self.ax1.clear()
+        self.ax1.plot(*self.xyzs.T, lw=0.5)
+        self.ax1.set_title("Lorenz Attractor")
+        self.ax1.set_xlabel("X Axis")
+        self.ax1.set_ylabel("Y Axis")
+        self.ax1.set_zlabel("Z Axis")
 
-            if len(self.xyzs) > 1:
-                self.update_recurrence_plot()
+        if len(self.xyzs) > 1:
+            self.update_recurrence_plot()
 
-            self.canvas.draw()
-            self.root.after(100, self.update_plot)
+        self.canvas.draw()
+        self.root.after(100, self.update_plot)
 
     def update_recurrence_plot(self):
         self.ax2.clear()
@@ -173,11 +175,12 @@ class LivePlotAppLorenz:
         self.ax2.set_ylabel("Vector Index")
 
     def start(self):
-        if not self.is_running:
-            self.is_running = True
-            self.update_plot()
-            self.update_recurrence_plot()
-            self.change_frequency()
+        if self.is_running:
+            return
+        self.is_running = True
+        self.update_plot()
+        self.update_recurrence_plot()
+        self.change_frequency()
 
     def stop(self):
         self.is_running = False
