@@ -83,13 +83,9 @@ class LivePlotAppSine:
     def start(self):
         if self.is_running:
             return
-        print('1')
         self.is_running = True
-        print('2')
         self.update_plot()
-        print('3')
         self.update_recurrence_plot()
-        print('4')
         self.change_frequency()
 
     def stop(self):
@@ -107,10 +103,14 @@ class LivePlotAppLorenz:
         self.root = root
         self.root.title("Live Data and Recurrence Plot")
 
-        # Create a figure and two subplots (one for the Lorenz attractor, one for the recurrence plot)
-        self.fig = plt.Figure(figsize=(10, 5))
-        self.ax1 = self.fig.add_subplot(121, projection='3d')
-        self.ax2 = self.fig.add_subplot(122)
+        # Create a figure and three subplots
+        self.fig = plt.Figure(figsize=(12, 5))
+        self.ax1 = self.fig.add_subplot(131, projection='3d')
+        self.ax2 = self.fig.add_subplot(132)
+        self.ax3 = self.fig.add_subplot(133)
+
+        # Adjusting layout to prevent overlap
+        self.fig.subplots_adjust(left=0.05, right=0.95, top=0.9, bottom=0.1, wspace=0.5)
 
         # Embedding the Matplotlib figure into Tkinter canvas
         self.canvas = FigureCanvasTkAgg(self.fig, master=root)
@@ -132,10 +132,7 @@ class LivePlotAppLorenz:
     def update_plot(self):
         if not self.is_running:
             return
-        print('hello')
         new_point = self.xyzs[-1] + lorenz(self.xyzs[-1]) * self.dt
-        print(new_point)
-        print(self.xyzs)
         self.xyzs = np.append(self.xyzs, [new_point], axis=0)
         self.ax1.clear()
         self.ax1.plot(*self.xyzs.T, lw=0.5)
@@ -144,6 +141,16 @@ class LivePlotAppLorenz:
         self.ax1.set_ylabel("Y Axis")
         self.ax1.set_zlabel("Z Axis")
 
+        self.x = []
+        for coord in self.xyzs:
+            self.x.append(coord[0])
+
+        self.ax2.clear()
+        self.ax2.plot(self.x, lw=0.5)
+        self.ax2.set_title("X-coordinate of Lorenz Attractor")
+        self.ax2.set_xlabel("time")
+        self.ax2.set_ylabel("x-coordinate")
+
         if len(self.xyzs) > 1:
             self.update_recurrence_plot()
 
@@ -151,28 +158,30 @@ class LivePlotAppLorenz:
         self.root.after(100, self.update_plot)
 
     def update_recurrence_plot(self):
-        self.ax2.clear()
+        self.ax3.clear()
 
         m = 10
         T = 3
 
-        num_vectors = np.shape(self.xyzs)[0]
-        D = squareform(pdist(self.xyzs, metric='euclidean'))
+        num_vectors = len(self.x) - (m - 1) * T
+        self.vectors = np.array([self.x[t:t + m * T:T] for t in range(num_vectors)])
+        if self.vectors.size > 0: # checks not empty list
+            D = squareform(pdist(self.vectors, metric='euclidean'))
 
-        # set epsilon to 10% of max phase space diameter
-        D_max = np.max(D)
-        epsilon = 0.1 * D_max
+            # set epsilon to 10% of max phase space diameter
+            D_max = np.max(D)
+            epsilon = 0.1 * D_max
 
-        # Find points of recurrence
-        hit = np.argwhere(D < epsilon)
+            # Find points of recurrence
+            hit = np.argwhere(D < epsilon)
 
-        # Extract x and y coordinates of points of recurrence
-        x_rec, y_rec = hit[:, 0], hit[:, 1]
+            # Extract x and y coordinates of points of recurrence
+            x_rec, y_rec = hit[:, 0], hit[:, 1]
 
-        self.ax2.scatter(x_rec, y_rec, s=1)
-        self.ax2.set_title("Recurrence Plot")
-        self.ax2.set_xlabel("Vector Index")
-        self.ax2.set_ylabel("Vector Index")
+            self.ax3.scatter(x_rec, y_rec, s=1)
+        self.ax3.set_title("Recurrence Plot")
+        self.ax3.set_xlabel("Vector Index")
+        self.ax3.set_ylabel("Vector Index")
 
     def start(self):
         if self.is_running:
@@ -180,7 +189,6 @@ class LivePlotAppLorenz:
         self.is_running = True
         self.update_plot()
         self.update_recurrence_plot()
-        self.change_frequency()
 
     def stop(self):
         self.is_running = False
