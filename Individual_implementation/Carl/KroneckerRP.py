@@ -22,14 +22,17 @@ sol = solve_ivp(lorenz, t_span, initial_state, args=(sigma, rho, beta), t_eval=t
 
 timeseries = sol.y[0]
 l = timeseries.shape[0]
-ones = np.ones_like(timeseries)
+ones = np.ones_like(timeseries).T
 
-m = 3 # embedding dimension
-T = 1 # delay
-epsilon = 0.1 # threshold
+m = 5 # embedding dimension
+T = 2 # delay
+epsilon = 100 # threshold
 
-H = hankel(timeseries[:l - m * T], timeseries[m * T:])
-P = np.kron(ones, H) - np.kron(H, ones)
+H = np.zeros((l-m+1, m)) # Trajectory Matrix
+for i in range(l-m*T+1):
+    H[i] = timeseries[i:i+m*T:T]
+
+P = np.kron(ones, H) - np.kron(H, ones) 
 distance_matrix = squareform(pdist(P, 'euclidean'))
 
 recurrence_matrix = (distance_matrix <= epsilon).astype(int)
