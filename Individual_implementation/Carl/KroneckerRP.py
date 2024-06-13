@@ -30,7 +30,7 @@ def fastRP(timeseries, m, T, epsilon):
     recurrence_matrix = (distance_matrix <= epsilon).astype(int)
     return recurrence_matrix
 
-def min_embedding_dim_false_nearest_neighbors(timeseries, max_dim, T=1, Rtol=10.0, Atol=2.0):
+def min_embedding_dim(timeseries, max_dim, T=1, Rtol=10.0, Atol=2.0):
     n = len(timeseries)
 
     for d in range(1, max_dim + 1):
@@ -70,7 +70,7 @@ m = 4 # embedding dimension
 T = 2 # delay
 epsilon = 75 # threshold
 
-m = min_embedding_dim_false_nearest_neighbors(timeseries, max_dim=50, T=T)
+m = min_embedding_dim(timeseries, max_dim=50, T=T)
 
 recurrence_matrix = fastRP(timeseries, m, T, epsilon)
 
