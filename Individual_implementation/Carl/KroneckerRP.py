@@ -10,32 +10,32 @@ def lorenz(t, Y, sigma, rho, beta):
     x, y, z = Y
     return [sigma * (y - x), x * (rho - z) - y, x * y - beta * z]
 
-def reshape(distance_vector):
-    distance_matrix = distance_vector.reshape((3, -1))
-    return distance_matrix
+def fastRP(timeseries, m, T, epsilon):
+    l = timeseries.shape[0]
+    ones = np.ones_like(timeseries).T
+
+    H = np.zeros((l-m+1, m)) # Trajectory Matrix
+    for i in range(l-m*T+1):
+        H[i] = timeseries[i:i+m*T:T]
+
+    P = np.kron(ones, H) - np.kron(H, ones) 
+    distance_matrix = squareform(pdist(P, 'euclidean'))
+
+    recurrence_matrix = (distance_matrix <= epsilon).astype(int)
+    return recurrence_matrix
 
 # Generate time series data
 t_span = (0, 40)
 t_eval = np.linspace(t_span[0], t_span[1], num=100)
 sol = solve_ivp(lorenz, t_span, initial_state, args=(sigma, rho, beta), t_eval=t_eval, method='RK45')
 
-
-timeseries = sol.y[0]
-l = timeseries.shape[0]
-ones = np.ones_like(timeseries).T
-
 m = 5 # embedding dimension
 T = 2 # delay
 epsilon = 100 # threshold
 
-H = np.zeros((l-m+1, m)) # Trajectory Matrix
-for i in range(l-m*T+1):
-    H[i] = timeseries[i:i+m*T:T]
+timeseries = sol.y[0]
 
-P = np.kron(ones, H) - np.kron(H, ones) 
-distance_matrix = squareform(pdist(P, 'euclidean'))
-
-recurrence_matrix = (distance_matrix <= epsilon).astype(int)
+recurrence_matrix = fastRP(timeseries, m, T, epsilon)
 
 #Plot the recurrence matrix
 plt.imshow(recurrence_matrix, cmap='binary', origin='lower')
