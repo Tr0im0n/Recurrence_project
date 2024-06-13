@@ -3,9 +3,15 @@ from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 from scipy.linalg import hankel
 from scipy.spatial.distance import pdist, squareform
+from sklearn.neighbors import NearestNeighbors
 
-sigma, rho, beta = 10, 28, 8/3
-initial_state = [1.0, 1.0, 1.0]
+def getexampledata():
+    sigma, rho, beta = 10, 28, 8/3
+    initial_state = [1.0, 1.0, 1.0]
+    t_span = (0, 40)
+    t_eval = np.linspace(t_span[0], t_span[1], num=1000)
+    sol = solve_ivp(lorenz, t_span, initial_state, args=(sigma, rho, beta), t_eval=t_eval, method='RK45')
+    return sol.y[0]
 def lorenz(t, Y, sigma, rho, beta):
     x, y, z = Y
     return [sigma * (y - x), x * (rho - z) - y, x * y - beta * z]
@@ -24,16 +30,47 @@ def fastRP(timeseries, m, T, epsilon):
     recurrence_matrix = (distance_matrix <= epsilon).astype(int)
     return recurrence_matrix
 
-# Generate time series data
-t_span = (0, 40)
-t_eval = np.linspace(t_span[0], t_span[1], num=100)
-sol = solve_ivp(lorenz, t_span, initial_state, args=(sigma, rho, beta), t_eval=t_eval, method='RK45')
+def min_embedding_dim_false_nearest_neighbors(timeseries, max_dim, T=1, Rtol=10.0, Atol=2.0):
+    n = len(timeseries)
 
-m = 5 # embedding dimension
+    for d in range(1, max_dim + 1):
+        embedding = np.zeros((n - d * T + 1, d))
+        for i in range(n - d * T + 1):
+            embedding[i] = timeseries[i:i + d * T:T]
+
+        if embedding.shape[0] < 2:
+            continue  # Need at least two points to proceed
+
+        # Find nearest neighbors in the current dimension
+        nn = NearestNeighbors(n_neighbors=2).fit(embedding)
+        distances, indices = nn.kneighbors(embedding)
+
+        count_fnn = 0
+        for i in range(len(embedding)):
+            dist_d = distances[i, 1]
+            neighbor_idx = indices[i, 1]
+
+            # Check next higher dimension
+            if i + d * T < n and neighbor_idx + d * T < n:
+                point_d1 = np.append(embedding[i], timeseries[i + d * T])
+                neighbor_point_d1 = np.append(embedding[neighbor_idx], timeseries[neighbor_idx + d * T])
+                dist_d1 = np.linalg.norm(point_d1 - neighbor_point_d1)
+
+                if dist_d1 / dist_d > Rtol or abs(dist_d1 - dist_d) > Atol:
+                    count_fnn += 1
+
+        fnn_ratio = count_fnn / len(embedding)
+        if fnn_ratio < 0.1:
+            return d  # Return the current dimension as the minimum
+
+    return -1  # Return -1 if no suitable dimension is found
+
+timeseries = getexampledata()
+m = 4 # embedding dimension
 T = 2 # delay
-epsilon = 100 # threshold
+epsilon = 75 # threshold
 
-timeseries = sol.y[0]
+m = min_embedding_dim_false_nearest_neighbors(timeseries, max_dim=50, T=T)
 
 recurrence_matrix = fastRP(timeseries, m, T, epsilon)
 
