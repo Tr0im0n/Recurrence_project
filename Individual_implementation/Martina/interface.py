@@ -42,7 +42,7 @@ class RecurrencePlotApp(tk.Tk):
         time_delay_scale.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         ttk.Label(frame, text="Epsilon:").pack(side=tk.LEFT)
-        epsilon_scale = ttk.Scale(frame, from_=0, to=1, variable=self.epsilon, command=self.update_plot)
+        epsilon_scale = ttk.Scale(frame, from_=1, to=100, variable=self.epsilon, command=self.update_plot)
         epsilon_scale.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
         self.figure = plt.Figure()
@@ -52,13 +52,13 @@ class RecurrencePlotApp(tk.Tk):
     def plot_recurrence(self):
         embedding_dimension = self.embedding_dimension.get()
         time_delay = self.time_delay.get()
-        epsilon = self.epsilon.get()
+        epsilon = self.epsilon.get()/10
         distance_matrix = recurrence_plot(self.data, embedding_dimension, time_delay, epsilon)
 
         self.figure.clear()
         ax = self.figure.add_subplot(111)
         cax = ax.imshow(distance_matrix, cmap='binary', origin='lower')
-        ax.set_title(f'Recurrence Plot (Embedding Dimension: {embedding_dimension}, Time Delay: {time_delay})')
+        ax.set_title(f'Recurrence Plot (Embedding Dimension: {embedding_dimension}, Time Delay: {time_delay}), Epsilon: {epsilon}')
         ax.set_xlabel('Time')
         ax.set_ylabel('Time')
         self.figure.colorbar(cax)
