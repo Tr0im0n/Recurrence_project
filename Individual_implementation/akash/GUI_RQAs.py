@@ -38,6 +38,10 @@ class LivePlotAppLorenz:
         self.btn_stop = ttk.Button(root, text="Stop", command=self.stop)
         self.btn_stop.pack(side=tk.RIGHT)
 
+        # Add button to open histogram window
+        self.btn_histogram = ttk.Button(root, text="Show Histogram", command=self.show_histogram)
+        self.btn_histogram.pack(side=tk.LEFT)
+
         # Label to display RQA measures
         self.rqa_label = ttk.Label(root, text="RQA Measures will appear here")
         self.rqa_label.pack(side=tk.BOTTOM, fill=tk.X, expand=1)
@@ -67,7 +71,7 @@ class LivePlotAppLorenz:
         self.ax2.set_xlabel("Time")
         self.ax2.set_ylabel("X-coordinate")
 
-        if len(self.xyzs) > 1:
+        if len(self.xyzs) > 0:
             self.update_recurrence_plot()
 
         self.canvas.draw()
@@ -90,8 +94,9 @@ class LivePlotAppLorenz:
             self.ax3.set_title("Recurrence Plot")
             self.ax3.set_xlabel("Vector Index")
             self.ax3.set_ylabel("Vector Index")
-            rqa_measures = self.calculate_rqa_measures(recurrence_matrix)
+            rqa_measures, diag_lengths = self.calculate_rqa_measures(recurrence_matrix)
             self.display_rqa_measures(rqa_measures)
+            self.diag_lengths = diag_lengths
 
     def calculate_rqa_measures(self, recurrence_matrix):
         num_points = recurrence_matrix.shape[0]
@@ -144,11 +149,31 @@ class LivePlotAppLorenz:
             "TREND": TREND,
             "LAM": LAM,
             "TT": TT
-        }
+        }, diag_lengths
 
     def display_rqa_measures(self, rqa_measures):
         text = "\n".join([f"{k}: {v:.4f}" for k, v in rqa_measures.items()])
         self.rqa_label.config(text=text)
+
+    def show_histogram(self):
+        if not hasattr(self, 'diag_lengths') or not self.diag_lengths:
+            return
+
+        # Create a new window for the histogram
+        hist_window = tk.Toplevel(self.root)
+        hist_window.title("Histogram of Diagonal Lengths")
+
+        # Create a figure for the histogram
+        fig, ax = plt.subplots(figsize=(6, 4))
+        ax.hist(self.diag_lengths, bins=20, edgecolor='black')
+        ax.set_title("Histogram of Diagonal Lengths")
+        ax.set_xlabel("Diagonal Length")
+        ax.set_ylabel("Frequency")
+
+        # Embed the figure in the new window
+        canvas = FigureCanvasTkAgg(fig, master=hist_window)
+        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=1)
+        canvas.draw()
 
     def start(self):
         if self.is_running:
