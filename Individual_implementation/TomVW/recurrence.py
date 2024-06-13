@@ -3,6 +3,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy
+from matplotlib.widgets import Slider
 from scipy.spatial.distance import pdist, squareform
 
 
@@ -75,11 +76,25 @@ def main():
     # my_recurrence_matrix = recurrence_matrix_slow(my_length_matrix)
     my_recurrence_matrix = fast(my_signal)
     time_obj.new()
-    epsilon = 0.2
-    my_r = (my_recurrence_matrix <= epsilon).astype(int)
+    my_epsilon = 80
+    my_r = (my_recurrence_matrix <= my_epsilon).astype(int)
     time_obj.new()
-    plt.imshow(my_r, cmap="binary", origin="lower")   # [:990, :990]
-    plt.title("Clipped recurrence plot")
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    ax1.plot(np.arange(0, 10, 0.1), my_signal)
+    ax1.set_title("My signal")
+    ax2.imshow(my_recurrence_matrix, cmap="gray", origin="lower")   # [:990, :990]
+    ax2.set_title("Clipped recurrence plot")
+
+    def test1(epsilon):
+        r = my_recurrence_matrix <= epsilon
+        ax2.clear()
+        ax2.imshow(r, cmap="gray_r", origin="lower")
+        ax2.set_title("Clipped recurrence plot")
+        plt.draw()
+
+    epsilon_slider = Slider(plt.axes((0.55, 0.05, 0.4, 0.1)), "Epsilon", 1, 100, valinit=10, valstep=1)
+    epsilon_slider.on_changed(test1)
+
     plt.show()
 
 
