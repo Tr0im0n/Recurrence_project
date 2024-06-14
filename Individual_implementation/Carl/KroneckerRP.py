@@ -18,7 +18,7 @@ def lorenz(t, Y, sigma, rho, beta):
 
 def fastRP(timeseries, m, T, epsilon):
     l = timeseries.shape[0]
-    ones = np.ones_like(timeseries).T
+    ones = np.ones_like(timeseries)
 
     H = np.zeros((l-m+1, m)) # Trajectory Matrix
     for i in range(l-m*T+1):
