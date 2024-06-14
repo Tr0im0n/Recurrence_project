@@ -22,7 +22,7 @@ class TimeObject:
 
 
 def create_signal1():
-    xs = np.arange(0, 10, 0.001)
+    xs = np.arange(0, 10, 0.01)
     signal1 = 4*np.sin(np.pi*xs)
     signal2 = 2*np.sin(2*np.pi*xs)
     signal3 = np.sin(4*np.pi*xs)
@@ -76,6 +76,7 @@ def test2(signal: np.ndarray, m: int = 5):
     :return: The Recurrence plot, clipped?
     """
     my_length = signal.shape[0]
+    signal.reshape(my_length, 1)
     my_distances = pdist(signal, "euclidean")
     my_zeros = np.zero((my_length, my_length - 1))
     rows, cols = np.triu_indices(my_zeros, k=0)
