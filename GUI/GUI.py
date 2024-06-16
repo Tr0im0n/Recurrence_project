@@ -4,7 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from scipy.spatial.distance import pdist, squareform
-from my_functions import lorenz, chua
+from attractor_functions import *
+from rqa_functions import *
 
 # Import the necessary pyrqa modules
 from pyrqa.time_series import TimeSeries
@@ -63,7 +64,7 @@ class LivePlotApp:
         self.btn_reset.grid(row=2, column=0)
 
         # Add button to open histogram window
-        self.btn_histogram = ttk.Button(self.command_window, text="Show Histogram", command=self.show_histogram)
+        self.btn_histogram = ttk.Button(self.command_window, text="Show Histogram", command=lambda: show_histogram(self))
         self.btn_histogram.grid(row=3, column=0)
 
         # Add drop down menu to select function
@@ -146,50 +147,13 @@ class LivePlotApp:
             ax_rp.set_title("Recurrence Plot")
             ax_rp.set_xlabel("Vector Index")
             ax_rp.set_ylabel("Vector Index")
-            rqa_measures = self.calculate_rqa_measures_pyrqa(vectors, epsilon)
+            rqa_measures = calculate_rqa_measures_pyrqa(self, vectors, epsilon)
             #det2, lam2 = self.calculate_manual_det_lam(recurrence_matrix)
             #rqa_measures["DET2"] = det2
             #rqa_measures["LAM2"] = lam2
-            self.display_rqa_measures(rqa_measures)
+            display_rqa_measures(self, rqa_measures)
 
-    def calculate_rqa_measures_pyrqa(self, vectors, epsilon):
-        time_series = TimeSeries(vectors[:, 0], embedding_dimension=10, time_delay=3)
-        settings = Settings(time_series,
-                            neighbourhood=FixedRadius(epsilon),
-                            similarity_measure=EuclideanMetric(),
-                            theiler_corrector=1)
 
-        computation = RQAComputation.create(settings)
-        result = computation.run()
-
-        rqa_measures = {
-            "RR": result.recurrence_rate,
-            "DET": result.determinism,
-            "L": result.average_diagonal_line,
-            "Lmax": result.longest_diagonal_line,
-            "DIV": result.divergence,
-            "ENTR": result.entropy_diagonal_lines,
-            "LAM": result.laminarity,
-            "TT": result.trapping_time
-        }
-
-        return rqa_measures
-
-    def calculate_manual_det_lam(self, recurrence_matrix):
-        # Calculate DET2
-        diagonals = [np.diagonal(recurrence_matrix, offset=i) for i in
-                     range(-recurrence_matrix.shape[0] + 1, recurrence_matrix.shape[1])]
-        det2 = sum([np.sum(diag) for diag in diagonals if len(diag) > 1]) / np.sum(recurrence_matrix)
-
-        # Calculate LAM2
-        vertical_lines = [np.sum(recurrence_matrix[:, i]) for i in range(recurrence_matrix.shape[1])]
-        lam2 = sum([length for length in vertical_lines if length > 1]) / np.sum(recurrence_matrix)
-
-        return det2, lam2
-
-    def display_rqa_measures(self, rqa_measures):
-        text = "\n".join([f"{k}: {v:.4f}" for k, v in rqa_measures.items()])
-        self.rqa_label.config(text=text)
 
     def start(self):
         if not self.is_running:
@@ -209,19 +173,6 @@ class LivePlotApp:
 
     def on_select(self, *args):
         self.reset()
-
-    def show_histogram(self):
-        if hasattr(self, 'diag_lengths'):
-            diag_lengths = self.diag_lengths
-            unique_lengths = np.unique(diag_lengths)
-            counts = [diag_lengths.count(ul) for ul in unique_lengths]
-            plt.figure()
-            plt.bar(unique_lengths, counts)
-            plt.xlabel("Diagonal Length")
-            plt.ylabel("Count")
-            plt.title("Histogram of Diagonal Lengths")
-            plt.show()
-
 
 if __name__ == "__main__":
     root = tk.Tk()
