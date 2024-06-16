@@ -8,6 +8,13 @@ class LivePlotApp:
         self.root = root
         self.root.title("Live Data and Recurrence Plot")
 
+        self.create_tabs()
+        self.create_home_tab()
+        self.create_functions_tab()
+        self.create_data_tab()
+
+
+    def create_tabs(self):
         # Configure tab system
         self.notebook = ttk.Notebook(root)
         self.home_tab = ttk.Frame(self.notebook)
@@ -19,6 +26,7 @@ class LivePlotApp:
         self.notebook.add(self.data_tab, text='Plotting Data')
         self.notebook.pack(expand=1, fill='both')
 
+    def create_home_tab(self):
         # Title label
         self.title_label = ttk.Label(self.home_tab, text="Welcome to Live Data and Recurrence Plot GUI",
                                      font=("Helvetica", 16))
@@ -41,6 +49,7 @@ class LivePlotApp:
                                        command=lambda: self.notebook.select(self.data_tab))
         self.btn_data_tab.pack(pady=5)
 
+    def create_functions_tab(self):
         # Configure grid layout in the function_tab
         self.function_tab.columnconfigure(0, weight=1)
         self.function_tab.columnconfigure(1, weight=1)
@@ -48,56 +57,57 @@ class LivePlotApp:
         self.function_tab.rowconfigure(1, weight=1)
 
         # Create a figure and three subplots
-        self.fig_ps = plt.Figure()
-        self.fig_comp = plt.Figure()
-        self.fig_rp = plt.Figure()
+        self.fig_ps_func = plt.Figure()
+        self.fig_comp_func = plt.Figure()
+        self.fig_rp_func = plt.Figure()
 
         # Embedding the Matplotlib figures into Tkinter canvas
-        self.canvas_ps = FigureCanvasTkAgg(self.fig_ps, master=self.function_tab)
-        self.canvas_ps.get_tk_widget().grid(row=0, column=1, sticky='nsew')
+        self.canvas_ps_func = FigureCanvasTkAgg(self.fig_ps_func, master=self.function_tab)
+        self.canvas_ps_func.get_tk_widget().grid(row=0, column=1, sticky='nsew')
 
-        self.canvas_comp = FigureCanvasTkAgg(self.fig_comp, master=self.function_tab)
-        self.canvas_comp.get_tk_widget().grid(row=1, column=0, sticky='nsew')
+        self.canvas_comp_func = FigureCanvasTkAgg(self.fig_comp_func, master=self.function_tab)
+        self.canvas_comp_func.get_tk_widget().grid(row=1, column=0, sticky='nsew')
 
-        self.canvas_rp = FigureCanvasTkAgg(self.fig_rp, master=self.function_tab)
-        self.canvas_rp.get_tk_widget().grid(row=1, column=1, sticky='nsew')
+        self.canvas_rp_func = FigureCanvasTkAgg(self.fig_rp_func, master=self.function_tab)
+        self.canvas_rp_func.get_tk_widget().grid(row=1, column=1, sticky='nsew')
 
         # Make frame for buttons
-        self.command_window = ttk.Frame(self.function_tab)
-        self.command_window.grid(row=0, column=0, sticky='nsew')
+        self.command_window_func = ttk.Frame(self.function_tab)
+        self.command_window_func.grid(row=0, column=0, sticky='nsew')
 
-        self.command_window.columnconfigure(0, weight=1)
-        self.command_window.columnconfigure(1, weight=1)
-        self.command_window.columnconfigure(2, weight=1)
-        self.command_window.rowconfigure(0, weight=1)
-        self.command_window.rowconfigure(1, weight=1)
-        self.command_window.rowconfigure(2, weight=1)
-        self.command_window.rowconfigure(3, weight=1)
+        self.command_window_func.columnconfigure(0, weight=1)
+        self.command_window_func.columnconfigure(1, weight=1)
+        self.command_window_func.columnconfigure(2, weight=1)
+        self.command_window_func.rowconfigure(0, weight=1)
+        self.command_window_func.rowconfigure(1, weight=1)
+        self.command_window_func.rowconfigure(2, weight=1)
+        self.command_window_func.rowconfigure(3, weight=1)
 
         # Add Start, Stop, and Reset buttons to control the live plotting
-        self.btn_start = ttk.Button(self.command_window, text="Start", command=self.start)
-        self.btn_start.grid(row=0, column=0)
+        self.btn_start_func = ttk.Button(self.command_window_func, text="Start", command=self.start)
+        self.btn_start_func.grid(row=0, column=0)
 
-        self.btn_stop = ttk.Button(self.command_window, text="Stop", command=self.stop)
-        self.btn_stop.grid(row=1, column=0)
+        self.btn_stop_func = ttk.Button(self.command_window_func, text="Stop", command=self.stop)
+        self.btn_stop_func.grid(row=1, column=0)
 
-        self.btn_reset = ttk.Button(self.command_window, text="Reset", command=self.reset)
-        self.btn_reset.grid(row=2, column=0)
+        self.btn_reset_func = ttk.Button(self.command_window_func, text="Reset", command=self.reset_func)
+        self.btn_reset_func.grid(row=2, column=0)
 
         # Add button to open histogram window
-        self.btn_histogram = ttk.Button(self.command_window, text="Show Histogram", command=lambda: show_histogram(self))
-        self.btn_histogram.grid(row=3, column=0)
+        self.btn_histogram_func = ttk.Button(self.command_window_func, text="Show Histogram",
+                                             command=lambda: show_histogram(self))
+        self.btn_histogram_func.grid(row=3, column=0)
 
         # Add drop down menu to select function
-        self.selected_option = tk.StringVar()
+        self.selected_option_func = tk.StringVar()
         functions = ["Lorenz", "Chua", "Rossler", "Chen"]
-        self.selected_option.set(functions[0])
-        self.dropdown = ttk.OptionMenu(self.command_window, self.selected_option, *functions)
-        self.dropdown.grid(row=0, column=1)
-        self.selected_option.trace("w", self.on_select)
+        self.selected_option_func.set(functions[0])
+        self.dropdown_func = ttk.OptionMenu(self.command_window_func, self.selected_option_func, *functions)
+        self.dropdown_func.grid(row=0, column=1)
+        self.selected_option_func.trace("w", self.on_select)
 
         # Label to display RQA measures
-        self.rqa_label = ttk.Label(self.command_window, text="RQA Measures will appear here")
+        self.rqa_label = ttk.Label(self.command_window_func, text="RQA Measures will appear here")
         self.rqa_label.grid(row=0, column=2, rowspan=2)
 
         # Variables to control the live plotting
@@ -106,23 +116,110 @@ class LivePlotApp:
         self.time_step = 0
         self.dt = 0.01
 
+    def create_data_tab(self):
+        # Configure grid layout in the function_tab
+        self.data_tab.columnconfigure(0, weight=1)
+        self.data_tab.columnconfigure(1, weight=1)
+        self.data_tab.rowconfigure(0, weight=1)
+        self.data_tab.rowconfigure(1, weight=1)
+
+        # Create a figure and three subplots
+        self.fig_data = plt.Figure()
+        self.fig_rp_data = plt.Figure()
+
+        # Embedding the Matplotlib figures into Tkinter canvas
+        self.canvas_comp_data = FigureCanvasTkAgg(self.fig_data, master=self.data_tab)
+        self.canvas_comp_data.get_tk_widget().grid(row=1, column=0, sticky='nsew')
+
+        self.canvas_rp_data = FigureCanvasTkAgg(self.fig_rp_data, master=self.data_tab)
+        self.canvas_rp_data.get_tk_widget().grid(row=1, column=1, sticky='nsew')
+
+        # Make frame for buttons
+        self.command_window_data = ttk.Frame(self.data_tab)
+        self.command_window_data.grid(row=0, column=0, sticky='nsew')
+
+        self.command_window_data.columnconfigure(0, weight=1)
+        self.command_window_data.columnconfigure(1, weight=1)
+        self.command_window_data.columnconfigure(2, weight=1)
+        self.command_window_data.rowconfigure(0, weight=1)
+        self.command_window_data.rowconfigure(1, weight=1)
+        self.command_window_data.rowconfigure(2, weight=1)
+        self.command_window_data.rowconfigure(3, weight=1)
+
+        # Add Start, Stop, and Reset buttons to control the live plotting
+        self.btn_start_data = ttk.Button(self.command_window_data, text="Start", command=self.start)
+        self.btn_start_data.grid(row=0, column=0)
+
+        self.btn_stop_data = ttk.Button(self.command_window_data, text="Stop", command=self.stop)
+        self.btn_stop_data.grid(row=1, column=0)
+
+        self.btn_reset_data = ttk.Button(self.command_window_data, text="Reset", command=self.reset_func)
+        self.btn_reset_data.grid(row=2, column=0)
+
+        # Add button to open histogram window
+        self.btn_histogram_data = ttk.Button(self.command_window_data, text="Show Histogram",
+                                          command=lambda: show_histogram(self))
+        self.btn_histogram_data.grid(row=3, column=0)
+
+        # Add text inputs for embedding dimension (m), time delay (T), and threshold (e)
+        self.embedding_dim_label = ttk.Label(self.command_window_data, text="Embedding Dimension (m):")
+        self.embedding_dim_label.grid(row=0, column=1, sticky='e')
+        self.embedding_dim_input = ttk.Entry(self.command_window_data)
+        self.embedding_dim_input.grid(row=0, column=2, sticky='w')
+
+        self.time_delay_label = ttk.Label(self.command_window_data, text="Time Delay (T):")
+        self.time_delay_label.grid(row=1, column=1, sticky='e')
+        self.time_delay_input = ttk.Entry(self.command_window_data)
+        self.time_delay_input.grid(row=1, column=2, sticky='w')
+
+        self.threshold_label = ttk.Label(self.command_window_data, text="Threshold (e):")
+        self.threshold_label.grid(row=2, column=1, sticky='e')
+        self.threshold_input = ttk.Entry(self.command_window_data)
+        self.threshold_input.grid(row=2, column=2, sticky='w')
+
+        # Label to display RQA measures
+        self.rqa_label_data = ttk.Label(self.command_window_data, text="RQA Measures will appear here")
+        self.rqa_label_data.grid(row=0, column=2, rowspan=2)
+
+        # Variables to control the live plotting
+        self.is_running = False
+        self.xyzs = np.array([[0., 1., 1.05]])  # Initialize xyzs with an initial value
+        self.time_step = 0
+        self.dt = 0.01
 
     def toggle_buttons(self, state):
             # Toggle all buttons except start and stop
-            self.btn_reset.config(state=state)
-            self.btn_histogram.config(state=state)
-            self.dropdown.config(state=state)
+            self.btn_reset_func.config(state=state)
+            self.btn_histogram_func.config(state=state)
+            self.dropdown_func.config(state=state)
 
     def plot_data(self):
         file_path = 'sample_data.csv'
         data_all = pd.read_csv(file_path, sep='\s+')
         data = data_all['SOI']
-        print(data)
+
+        m = int(self.embedding_dim_input.get())
+        T = int(self.time_delay_input.get())
+        epsilon = int(self.threshold_input.get())
+
+        # Construct embedded vectors
+        num_vectors = len(data) - (m - 1) * T
+        vectors = np.array([data[t:t + m * T:T] for t in range(num_vectors)])
+        print(np.shape(vectors))
+
+        # Find recurrence points using distance between embedded vectors
+        self.D = squareform(pdist(vectors, metric='euclidean'))
+        print(np.shape(self.D))
+        hit = np.argwhere(self.D < epsilon)
+
+        # Extract x and y coordinates of points of recurrence
+        x_rec, y_rec = hit[:, 0], hit[:, 1]
+
 
     def update_plot(self):
         if not self.is_running:
             return
-        selected_function_name = self.selected_option.get().lower()
+        selected_function_name = self.selected_option_func.get().lower()
         if selected_function_name == 'lorenz':
             new_point = self.xyzs[-1] + lorenz(self.xyzs[-1]) * self.dt
         elif selected_function_name == 'chua':
@@ -131,8 +228,8 @@ class LivePlotApp:
             new_point = self.xyzs[-1]  # Default, no change
 
         self.xyzs = np.append(self.xyzs, [new_point], axis=0)
-        self.fig_ps.clear()
-        ax_ps = self.fig_ps.add_subplot(111, projection='3d')
+        self.fig_ps_func.clear()
+        ax_ps = self.fig_ps_func.add_subplot(111, projection='3d')
         ax_ps.plot(*self.xyzs.T, lw=0.5)
         ax_ps.set_title(f"{selected_function_name.capitalize()} Attractor")
         ax_ps.set_xlabel("X Axis")
@@ -140,8 +237,8 @@ class LivePlotApp:
         ax_ps.set_zlabel("Z Axis")
 
         self.x = [coord[0] for coord in self.xyzs]
-        self.fig_comp.clear()
-        ax_comp = self.fig_comp.add_subplot(111)
+        self.fig_comp_func.clear()
+        ax_comp = self.fig_comp_func.add_subplot(111)
         ax_comp.plot(self.x, lw=0.5)
         ax_comp.set_title("X-coordinate")
         ax_comp.set_xlabel("Time")
@@ -150,16 +247,16 @@ class LivePlotApp:
         if len(self.xyzs) > 0:
             self.update_recurrence_plot()
 
-        self.canvas_ps.draw()
-        self.canvas_comp.draw()
-        self.canvas_rp.draw()
+        self.canvas_ps_func.draw()
+        self.canvas_comp_func.draw()
+        self.canvas_rp_func.draw()
 
         if self.is_running:
             self.root.after(10, self.update_plot)
 
     def update_recurrence_plot(self):
-        self.fig_rp.clear()
-        ax_rp = self.fig_rp.add_subplot(111)
+        self.fig_rp_func.clear()
+        ax_rp = self.fig_rp_func.add_subplot(111)
 
         m = 10
         T = 3
@@ -193,19 +290,19 @@ class LivePlotApp:
             self.is_running = False
             self.toggle_buttons("normal")
 
-    def reset(self):
+    def reset_func(self):
         self.is_running = False
         self.xyzs = np.array([[0., 1., 1.05]])  # Reset the initial value
-        self.fig_ps.clear()
-        self.fig_comp.clear()
-        self.fig_rp.clear()
-        self.canvas_ps.draw()
-        self.canvas_comp.draw()
-        self.canvas_rp.draw()
-        self.selected_option.set("Lorenz")
+        self.fig_ps_func.clear()
+        self.fig_comp_func.clear()
+        self.fig_rp_func.clear()
+        self.canvas_ps_func.draw()
+        self.canvas_comp_func.draw()
+        self.canvas_rp_func.draw()
+        self.selected_option_func.set("Lorenz")
 
     def on_select(self, *args):
-        self.reset()
+        self.reset_func()
 
 if __name__ == "__main__":
     root = tk.Tk()
