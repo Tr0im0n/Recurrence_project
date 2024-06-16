@@ -3,9 +3,16 @@ from tkinter import ttk
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from itertools import groupby
 from scipy.spatial.distance import pdist, squareform
 from my_functions import lorenz, chua
+
+# Import the necessary pyrqa modules
+from pyrqa.time_series import TimeSeries
+from pyrqa.settings import Settings
+from pyrqa.computation import RQAComputation
+from pyrqa.metric import EuclideanMetric
+from pyrqa.neighbourhood import FixedRadius
+
 
 class LivePlotApp:
     def __init__(self, root):
@@ -77,12 +84,6 @@ class LivePlotApp:
         self.time_step = 0
         self.dt = 0.01
 
-    # def button_state(self, state):
-    #     # Toggle all buttons except start and stop
-    #     if self.is_running:
-    #         self.active_command = 'disabled'
-    #     else:
-    #         self.active_command = 'normal'
     def toggle_buttons(self, state):
         # Toggle all buttons except start and stop
         self.btn_reset.config(state=state)
@@ -123,7 +124,9 @@ class LivePlotApp:
         self.canvas_ps.draw()
         self.canvas_comp.draw()
         self.canvas_rp.draw()
-        self.root.after(1, self.update_plot)
+
+        if self.is_running:
+            self.root.after(10, self.update_plot)
 
     def update_recurrence_plot(self):
         self.fig_rp.clear()
@@ -143,111 +146,81 @@ class LivePlotApp:
             ax_rp.set_title("Recurrence Plot")
             ax_rp.set_xlabel("Vector Index")
             ax_rp.set_ylabel("Vector Index")
-            rqa_measures, diag_lengths = self.calculate_rqa_measures(recurrence_matrix)
+            rqa_measures = self.calculate_rqa_measures_pyrqa(vectors, epsilon)
+            #det2, lam2 = self.calculate_manual_det_lam(recurrence_matrix)
+            #rqa_measures["DET2"] = det2
+            #rqa_measures["LAM2"] = lam2
             self.display_rqa_measures(rqa_measures)
-            self.diag_lengths = diag_lengths
 
-    def calculate_rqa_measures(self, recurrence_matrix):
-        num_points = recurrence_matrix.shape[0]
-        # Calculate recurrence rate (RR)
-        RR = np.sum(recurrence_matrix) / (num_points ** 2)
+    def calculate_rqa_measures_pyrqa(self, vectors, epsilon):
+        time_series = TimeSeries(vectors[:, 0], embedding_dimension=10, time_delay=3)
+        settings = Settings(time_series,
+                            neighbourhood=FixedRadius(epsilon),
+                            similarity_measure=EuclideanMetric(),
+                            theiler_corrector=1)
 
-        # Calculate diagonal line structures
-        diagonals = [np.diag(recurrence_matrix, k) for k in range(-num_points + 1, num_points)]
-        diag_lengths = [len(list(group)) for diag in diagonals for k, group in groupby(diag) if k == 1]
+        computation = RQAComputation.create(settings)
+        result = computation.run()
 
-        # Calculate DET
-        DET = sum(l for l in diag_lengths if l >= 2) / np.sum(recurrence_matrix) if np.sum(recurrence_matrix) != 0 else 0
+        rqa_measures = {
+            "RR": result.recurrence_rate,
+            "DET": result.determinism,
+            "L": result.average_diagonal_line,
+            "Lmax": result.longest_diagonal_line,
+            "DIV": result.divergence,
+            "ENTR": result.entropy_diagonal_lines,
+            "LAM": result.laminarity,
+            "TT": result.trapping_time
+        }
 
-        # Calculate L
-        L = np.mean([l for l in diag_lengths if l >= 2]) if diag_lengths else 0
+        return rqa_measures
 
-        # Calculate Lmax
-        Lmax = max(diag_lengths) if diag_lengths else 0
+    def calculate_manual_det_lam(self, recurrence_matrix):
+        # Calculate DET2
+        diagonals = [np.diagonal(recurrence_matrix, offset=i) for i in
+                     range(-recurrence_matrix.shape[0] + 1, recurrence_matrix.shape[1])]
+        det2 = sum([np.sum(diag) for diag in diagonals if len(diag) > 1]) / np.sum(recurrence_matrix)
 
-        # Calculate DIV
-        DIV = 1 / Lmax if Lmax != 0 else 0
+        # Calculate LAM2
+        vertical_lines = [np.sum(recurrence_matrix[:, i]) for i in range(recurrence_matrix.shape[1])]
+        lam2 = sum([length for length in vertical_lines if length > 1]) / np.sum(recurrence_matrix)
 
-        # Calculate ENTR
-        counts = np.bincount(diag_lengths)
-        probs = counts / np.sum(counts)
-        probs = probs[probs > 0]
-        ENTR = -np.sum(probs * np.log(probs)) if np.sum(counts) > 0 else 0
-
-        # Calculate trend (TREND)
-        TREND = np.mean([np.mean(recurrence_matrix[i, i:]) for i in range(num_points)])
-
-        # Calculate laminarity (LAM)
-        verticals = [recurrence_matrix[:, i] for i in range(num_points)]
-        vert_lengths = [len(list(group)) for vert in verticals for k, group in groupby(vert) if k == 1]
-        LAM = sum(l for l in vert_lengths if l >= 2) / np.sum(recurrence_matrix) if np.sum(recurrence_matrix) != 0 else 0
-
-        # Calculate trapping time (TT)
-        TT = np.mean([l for l in vert_lengths if l >= 2]) if vert_lengths else 0
-
-        return {
-            "RR": RR,
-            "DET": DET,
-            "L": L,
-            "Lmax": Lmax,
-            "DIV": DIV,
-            "ENTR": ENTR,
-            "TREND": TREND,
-            "LAM": LAM,
-            "TT": TT
-        }, diag_lengths
+        return det2, lam2
 
     def display_rqa_measures(self, rqa_measures):
         text = "\n".join([f"{k}: {v:.4f}" for k, v in rqa_measures.items()])
         self.rqa_label.config(text=text)
 
-    def show_histogram(self):
-        if not hasattr(self, 'diag_lengths') or not self.diag_lengths:
-            return
-
-        # Create a new window for the histogram
-        hist_window = tk.Toplevel(self.root)
-        hist_window.title("Histogram of Diagonal Lengths")
-
-        # Create a figure for the histogram
-        fig, ax = plt.subplots(figsize=(6, 4))
-        ax.hist(self.diag_lengths, bins=20, edgecolor='black')
-        ax.set_title("Histogram of Diagonal Lengths")
-        ax.set_xlabel("Diagonal Length")
-        ax.set_ylabel("Frequency")
-
-        # Embed the figure in the new window
-        canvas = FigureCanvasTkAgg(fig, master=hist_window)
-        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=1)
-        canvas.draw()
-
-    def on_select(self, *args):
-        selected_value = self.selected_option.get()
-        print(f"Selected: {selected_value}")
-
     def start(self):
-        if self.is_running:
-            return
-        self.is_running = True
-        self.toggle_buttons('disabled')
-        self.update_plot()
-        self.update_recurrence_plot()
-
+        if not self.is_running:
+            self.is_running = True
+            self.toggle_buttons("disabled")
+            self.update_plot()
 
     def stop(self):
-        self.is_running = False
-        self.toggle_buttons('normal')
+        if self.is_running:
+            self.is_running = False
+            self.toggle_buttons("normal")
 
     def reset(self):
-        self.is_running = False
-        self.xyzs = np.array([[0., 1., 1.05]])  # Reset the initial value
-        self.fig_ps.clear()
-        self.fig_comp.clear()
-        self.fig_rp.clear()
-        self.canvas_ps.draw()
-        self.canvas_comp.draw()
-        self.canvas_rp.draw()
-        self.selected_option.set("Lorenz")  # Reset to default option
+        self.stop()
+        self.time_step = 0
+        self.xyzs = np.array([[0., 1., 1.05]])  # Reset xyzs to the initial value
+
+    def on_select(self, *args):
+        self.reset()
+
+    def show_histogram(self):
+        if hasattr(self, 'diag_lengths'):
+            diag_lengths = self.diag_lengths
+            unique_lengths = np.unique(diag_lengths)
+            counts = [diag_lengths.count(ul) for ul in unique_lengths]
+            plt.figure()
+            plt.bar(unique_lengths, counts)
+            plt.xlabel("Diagonal Length")
+            plt.ylabel("Count")
+            plt.title("Histogram of Diagonal Lengths")
+            plt.show()
 
 
 if __name__ == "__main__":
