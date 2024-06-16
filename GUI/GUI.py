@@ -1,30 +1,51 @@
-import tkinter as tk
-from tkinter import ttk
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from scipy.spatial.distance import pdist, squareform
 from attractor_functions import *
 from rqa_functions import *
-
-# Import the necessary pyrqa modules
-from pyrqa.time_series import TimeSeries
-from pyrqa.settings import Settings
-from pyrqa.computation import RQAComputation
-from pyrqa.metric import EuclideanMetric
-from pyrqa.neighbourhood import FixedRadius
-
+import pandas as pd
 
 class LivePlotApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Live Data and Recurrence Plot")
 
-        # Configure grid layout
-        self.root.columnconfigure(0, weight=1)
-        self.root.columnconfigure(1, weight=1)
-        self.root.rowconfigure(0, weight=1)
-        self.root.rowconfigure(1, weight=1)
+        # Configure tab system
+        self.notebook = ttk.Notebook(root)
+        self.home_tab = ttk.Frame(self.notebook)
+        self.function_tab = ttk.Frame(self.notebook)
+        self.data_tab = ttk.Frame(self.notebook)
+
+        self.notebook.add(self.home_tab, text='Main Menu')
+        self.notebook.add(self.function_tab, text='Plotting Functions')
+        self.notebook.add(self.data_tab, text='Plotting Data')
+        self.notebook.pack(expand=1, fill='both')
+
+        # Title label
+        self.title_label = ttk.Label(self.home_tab, text="Welcome to Live Data and Recurrence Plot GUI",
+                                     font=("Helvetica", 16))
+        self.title_label.pack(pady=10)
+
+        # Textbox explaining what the GUI does
+        self.info_text = tk.Text(self.home_tab, wrap='word', height=10, width=50)
+        self.info_text.insert(tk.END,
+                              "This GUI allows you to visualize different chaotic systems and analyze their recurrence plots. "
+                              "You can start/stop/reset the live plotting of selected functions and display histograms of recurrence quantification analysis (RQA) measures.")
+        self.info_text.config(state=tk.DISABLED)  # Make the textbox read-only
+        self.info_text.pack(pady=10)
+
+        # Buttons to navigate to the other tabs
+        self.btn_functions_tab = ttk.Button(self.home_tab, text="Go to Plotting Functions",
+                                            command=lambda: self.notebook.select(self.function_tab))
+        self.btn_functions_tab.pack(pady=5)
+
+        self.btn_data_tab = ttk.Button(self.home_tab, text="Go to Plotting Data",
+                                       command=lambda: self.notebook.select(self.data_tab))
+        self.btn_data_tab.pack(pady=5)
+
+        # Configure grid layout in the function_tab
+        self.function_tab.columnconfigure(0, weight=1)
+        self.function_tab.columnconfigure(1, weight=1)
+        self.function_tab.rowconfigure(0, weight=1)
+        self.function_tab.rowconfigure(1, weight=1)
 
         # Create a figure and three subplots
         self.fig_ps = plt.Figure()
@@ -32,17 +53,17 @@ class LivePlotApp:
         self.fig_rp = plt.Figure()
 
         # Embedding the Matplotlib figures into Tkinter canvas
-        self.canvas_ps = FigureCanvasTkAgg(self.fig_ps, master=root)
+        self.canvas_ps = FigureCanvasTkAgg(self.fig_ps, master=self.function_tab)
         self.canvas_ps.get_tk_widget().grid(row=0, column=1, sticky='nsew')
 
-        self.canvas_comp = FigureCanvasTkAgg(self.fig_comp, master=root)
+        self.canvas_comp = FigureCanvasTkAgg(self.fig_comp, master=self.function_tab)
         self.canvas_comp.get_tk_widget().grid(row=1, column=0, sticky='nsew')
 
-        self.canvas_rp = FigureCanvasTkAgg(self.fig_rp, master=root)
+        self.canvas_rp = FigureCanvasTkAgg(self.fig_rp, master=self.function_tab)
         self.canvas_rp.get_tk_widget().grid(row=1, column=1, sticky='nsew')
 
         # Make frame for buttons
-        self.command_window = ttk.Frame(root)
+        self.command_window = ttk.Frame(self.function_tab)
         self.command_window.grid(row=0, column=0, sticky='nsew')
 
         self.command_window.columnconfigure(0, weight=1)
@@ -53,7 +74,7 @@ class LivePlotApp:
         self.command_window.rowconfigure(2, weight=1)
         self.command_window.rowconfigure(3, weight=1)
 
-        # Add Start, Stop, and reset buttons to control the live plotting
+        # Add Start, Stop, and Reset buttons to control the live plotting
         self.btn_start = ttk.Button(self.command_window, text="Start", command=self.start)
         self.btn_start.grid(row=0, column=0)
 
@@ -69,7 +90,7 @@ class LivePlotApp:
 
         # Add drop down menu to select function
         self.selected_option = tk.StringVar()
-        functions = ["Lorenz", "Chua"]
+        functions = ["Lorenz", "Chua", "Rossler", "Chen"]
         self.selected_option.set(functions[0])
         self.dropdown = ttk.OptionMenu(self.command_window, self.selected_option, *functions)
         self.dropdown.grid(row=0, column=1)
@@ -77,7 +98,7 @@ class LivePlotApp:
 
         # Label to display RQA measures
         self.rqa_label = ttk.Label(self.command_window, text="RQA Measures will appear here")
-        self.rqa_label.grid(row=0, column=2)
+        self.rqa_label.grid(row=0, column=2, rowspan=2)
 
         # Variables to control the live plotting
         self.is_running = False
@@ -85,11 +106,18 @@ class LivePlotApp:
         self.time_step = 0
         self.dt = 0.01
 
+
     def toggle_buttons(self, state):
-        # Toggle all buttons except start and stop
-        self.btn_reset.config(state=state)
-        self.btn_histogram.config(state=state)
-        self.dropdown.config(state=state)
+            # Toggle all buttons except start and stop
+            self.btn_reset.config(state=state)
+            self.btn_histogram.config(state=state)
+            self.dropdown.config(state=state)
+
+    def plot_data(self):
+        file_path = 'sample_data.csv'
+        data_all = pd.read_csv(file_path, sep='\s+')
+        data = data_all['SOI']
+        print(data)
 
     def update_plot(self):
         if not self.is_running:
@@ -154,7 +182,6 @@ class LivePlotApp:
             display_rqa_measures(self, rqa_measures)
 
 
-
     def start(self):
         if not self.is_running:
             self.is_running = True
@@ -167,9 +194,15 @@ class LivePlotApp:
             self.toggle_buttons("normal")
 
     def reset(self):
-        self.stop()
-        self.time_step = 0
-        self.xyzs = np.array([[0., 1., 1.05]])  # Reset xyzs to the initial value
+        self.is_running = False
+        self.xyzs = np.array([[0., 1., 1.05]])  # Reset the initial value
+        self.fig_ps.clear()
+        self.fig_comp.clear()
+        self.fig_rp.clear()
+        self.canvas_ps.draw()
+        self.canvas_comp.draw()
+        self.canvas_rp.draw()
+        self.selected_option.set("Lorenz")
 
     def on_select(self, *args):
         self.reset()
