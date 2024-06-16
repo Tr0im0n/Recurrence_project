@@ -5,18 +5,54 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from itertools import groupby
 from scipy.spatial.distance import pdist, squareform
-from my_functions import lorenz, chua
+from attractor_functions import lorenz, chua, rossler, chen
+from rqa_functions import *
 
 class LivePlotApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Live Data and Recurrence Plot")
 
+        # Configure tab system
+        self.notebook = ttk.Notebook(root)
+        self.home_tab = ttk.Frame(self.notebook)
+        self.function_tab = ttk.Frame(self.notebook)
+        self.data_tab = ttk.Frame(self.notebook)
+
+        self.notebook.add(self.home_tab, text = 'main menu')
+        self.notebook.add(self.function_tab, text = 'plotting functions')
+        self.notebook.add(self.data_tab, text = 'plotting data')
+        self.notebook.pack()
+
+        # Configure home_tab (main menu)
+        # Title label
+        self.title_label = ttk.Label(self.home_tab, text="Welcome to Live Data and Recurrence Plot GUI",
+                                     font=("Helvetica", 16))
+        self.title_label.pack(pady=10)
+
+        # Textbox explaining what the GUI does
+        self.info_text = tk.Text(self.home_tab, wrap='word', height=10, width=100)
+        self.info_text.insert(tk.END,
+                              "This GUI allows you to visualize different chaotic systems and analyze their recurrence plots. "
+                              "You can start/stop/reset the live plotting of selected functions and display histograms of recurrence quantification analysis (RQA) measures.")
+        self.info_text.config(state=tk.DISABLED)  # Make the textbox read-only
+        self.info_text.pack(pady=10)
+
+        # Buttons to navigate to the other tabs
+        self.btn_functions_tab = ttk.Button(self.home_tab, text="Go to Plotting Functions",
+                                            command=lambda: self.notebook.select(self.function_tab))
+        self.btn_functions_tab.pack(pady=5)
+
+        self.btn_data_tab = ttk.Button(self.home_tab, text="Go to Plotting Data",
+                                       command=lambda: self.notebook.select(self.data_tab))
+        self.btn_data_tab.pack(pady=5)
+
+        # Configure function plotting tab
         # Configure grid layout
-        self.root.columnconfigure(0, weight=1)
-        self.root.columnconfigure(1, weight=1)
-        self.root.rowconfigure(0, weight=1)
-        self.root.rowconfigure(1, weight=1)
+        self.function_tab.columnconfigure(0, weight=1)
+        self.function_tab.columnconfigure(1, weight=1)
+        self.function_tab.rowconfigure(0, weight=1)
+        self.function_tab.rowconfigure(1, weight=1)
 
         # Create a figure and three subplots
         self.fig_ps = plt.Figure()
@@ -24,17 +60,17 @@ class LivePlotApp:
         self.fig_rp = plt.Figure()
 
         # Embedding the Matplotlib figures into Tkinter canvas
-        self.canvas_ps = FigureCanvasTkAgg(self.fig_ps, master=root)
-        self.canvas_ps.get_tk_widget().grid(row=0, column=1, sticky='nsew')
+        self.canvas_ps = FigureCanvasTkAgg(self.fig_ps, master=self.function_tab)
+        self.canvas_ps.get_tk_widget().grid(row=0, column=1)
 
-        self.canvas_comp = FigureCanvasTkAgg(self.fig_comp, master=root)
-        self.canvas_comp.get_tk_widget().grid(row=1, column=0, sticky='nsew')
+        self.canvas_comp = FigureCanvasTkAgg(self.fig_comp, master=self.function_tab)
+        self.canvas_comp.get_tk_widget().grid(row=1, column=0)
 
-        self.canvas_rp = FigureCanvasTkAgg(self.fig_rp, master=root)
-        self.canvas_rp.get_tk_widget().grid(row=1, column=1, sticky='nsew')
+        self.canvas_rp = FigureCanvasTkAgg(self.fig_rp, master=self.function_tab)
+        self.canvas_rp.get_tk_widget().grid(row=1, column=1)
 
         # Make frame for buttons
-        self.command_window = ttk.Frame(root)
+        self.command_window = ttk.Frame(self.function_tab)
         self.command_window.grid(row=0, column=0, sticky='nsew')
 
         self.command_window.columnconfigure(0, weight=1)
@@ -56,12 +92,12 @@ class LivePlotApp:
         self.btn_reset.grid(row=2, column=0)
 
         # Add button to open histogram window
-        self.btn_histogram = ttk.Button(self.command_window, text="Show Histogram", command=self.show_histogram)
+        self.btn_histogram = ttk.Button(self.command_window, text="Show Histogram", command=lambda: show_histogram(self))
         self.btn_histogram.grid(row=3, column=0)
 
         # Add drop down menu to select function
         self.selected_option = tk.StringVar()
-        functions = ["Lorenz", "Chua"]
+        functions = ["Lorenz", "Chua", "rossler", "chen"]
         self.selected_option.set(functions[0])
         self.dropdown = ttk.OptionMenu(self.command_window, self.selected_option, *functions)
         self.dropdown.grid(row=0, column=1)
@@ -69,7 +105,7 @@ class LivePlotApp:
 
         # Label to display RQA measures
         self.rqa_label = ttk.Label(self.command_window, text="RQA Measures will appear here")
-        self.rqa_label.grid(row=0, column=2)
+        self.rqa_label.grid(row=0, column=2, rowspan='2')
 
         # Variables to control the live plotting
         self.is_running = False
@@ -77,19 +113,13 @@ class LivePlotApp:
         self.time_step = 0
         self.dt = 0.01
 
-    # def button_state(self, state):
-    #     # Toggle all buttons except start and stop
-    #     if self.is_running:
-    #         self.active_command = 'disabled'
-    #     else:
-    #         self.active_command = 'normal'
     def toggle_buttons(self, state):
         # Toggle all buttons except start and stop
         self.btn_reset.config(state=state)
         self.btn_histogram.config(state=state)
         self.dropdown.config(state=state)
 
-    def update_plot(self):
+    def plot_attractor(self):
         if not self.is_running:
             return
         selected_function_name = self.selected_option.get().lower()
@@ -97,6 +127,10 @@ class LivePlotApp:
             new_point = self.xyzs[-1] + lorenz(self.xyzs[-1]) * self.dt
         elif selected_function_name == 'chua':
             new_point = self.xyzs[-1] + chua(self.xyzs[-1]) * self.dt
+        elif selected_function_name == 'rossler':
+            new_point = self.xyzs[-1] + rossler(self.xyzs[-1]) * self.dt
+        elif selected_function_name == 'chen':
+            new_point = self.xyzs[-1] + chen(self.xyzs[-1]) * 0.01
         else:
             new_point = self.xyzs[-1]  # Default, no change
 
@@ -123,7 +157,7 @@ class LivePlotApp:
         self.canvas_ps.draw()
         self.canvas_comp.draw()
         self.canvas_rp.draw()
-        self.root.after(1, self.update_plot)
+        self.root.after(1, self.plot_attractor)
 
     def update_recurrence_plot(self):
         self.fig_rp.clear()
@@ -143,83 +177,9 @@ class LivePlotApp:
             ax_rp.set_title("Recurrence Plot")
             ax_rp.set_xlabel("Vector Index")
             ax_rp.set_ylabel("Vector Index")
-            rqa_measures, diag_lengths = self.calculate_rqa_measures(recurrence_matrix)
-            self.display_rqa_measures(rqa_measures)
+            rqa_measures, diag_lengths = calculate_rqa_measures(self, recurrence_matrix)
+            display_rqa_measures(self, rqa_measures)
             self.diag_lengths = diag_lengths
-
-    def calculate_rqa_measures(self, recurrence_matrix):
-        num_points = recurrence_matrix.shape[0]
-        # Calculate recurrence rate (RR)
-        RR = np.sum(recurrence_matrix) / (num_points ** 2)
-
-        # Calculate diagonal line structures
-        diagonals = [np.diag(recurrence_matrix, k) for k in range(-num_points + 1, num_points)]
-        diag_lengths = [len(list(group)) for diag in diagonals for k, group in groupby(diag) if k == 1]
-
-        # Calculate DET
-        DET = sum(l for l in diag_lengths if l >= 2) / np.sum(recurrence_matrix) if np.sum(recurrence_matrix) != 0 else 0
-
-        # Calculate L
-        L = np.mean([l for l in diag_lengths if l >= 2]) if diag_lengths else 0
-
-        # Calculate Lmax
-        Lmax = max(diag_lengths) if diag_lengths else 0
-
-        # Calculate DIV
-        DIV = 1 / Lmax if Lmax != 0 else 0
-
-        # Calculate ENTR
-        counts = np.bincount(diag_lengths)
-        probs = counts / np.sum(counts)
-        probs = probs[probs > 0]
-        ENTR = -np.sum(probs * np.log(probs)) if np.sum(counts) > 0 else 0
-
-        # Calculate trend (TREND)
-        TREND = np.mean([np.mean(recurrence_matrix[i, i:]) for i in range(num_points)])
-
-        # Calculate laminarity (LAM)
-        verticals = [recurrence_matrix[:, i] for i in range(num_points)]
-        vert_lengths = [len(list(group)) for vert in verticals for k, group in groupby(vert) if k == 1]
-        LAM = sum(l for l in vert_lengths if l >= 2) / np.sum(recurrence_matrix) if np.sum(recurrence_matrix) != 0 else 0
-
-        # Calculate trapping time (TT)
-        TT = np.mean([l for l in vert_lengths if l >= 2]) if vert_lengths else 0
-
-        return {
-            "RR": RR,
-            "DET": DET,
-            "L": L,
-            "Lmax": Lmax,
-            "DIV": DIV,
-            "ENTR": ENTR,
-            "TREND": TREND,
-            "LAM": LAM,
-            "TT": TT
-        }, diag_lengths
-
-    def display_rqa_measures(self, rqa_measures):
-        text = "\n".join([f"{k}: {v:.4f}" for k, v in rqa_measures.items()])
-        self.rqa_label.config(text=text)
-
-    def show_histogram(self):
-        if not hasattr(self, 'diag_lengths') or not self.diag_lengths:
-            return
-
-        # Create a new window for the histogram
-        hist_window = tk.Toplevel(self.root)
-        hist_window.title("Histogram of Diagonal Lengths")
-
-        # Create a figure for the histogram
-        fig, ax = plt.subplots(figsize=(6, 4))
-        ax.hist(self.diag_lengths, bins=20, edgecolor='black')
-        ax.set_title("Histogram of Diagonal Lengths")
-        ax.set_xlabel("Diagonal Length")
-        ax.set_ylabel("Frequency")
-
-        # Embed the figure in the new window
-        canvas = FigureCanvasTkAgg(fig, master=hist_window)
-        canvas.get_tk_widget().pack(fill=tk.BOTH, expand=1)
-        canvas.draw()
 
     def on_select(self, *args):
         selected_value = self.selected_option.get()
@@ -230,9 +190,8 @@ class LivePlotApp:
             return
         self.is_running = True
         self.toggle_buttons('disabled')
-        self.update_plot()
+        self.plot_attractor()
         self.update_recurrence_plot()
-
 
     def stop(self):
         self.is_running = False
@@ -248,7 +207,6 @@ class LivePlotApp:
         self.canvas_comp.draw()
         self.canvas_rp.draw()
         self.selected_option.set("Lorenz")  # Reset to default option
-
 
 if __name__ == "__main__":
     root = tk.Tk()
