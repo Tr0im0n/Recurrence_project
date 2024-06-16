@@ -5,6 +5,7 @@ from scipy.spatial.distance import pdist, squareform
 import numpy as np
 from scipy.integrate import solve_ivp
 from scipy.spatial.distance import cdist
+import pyunicorn
 
 # Differential equations for the Lorenz system
 def lorenz(t, Y, sigma, rho, beta):
