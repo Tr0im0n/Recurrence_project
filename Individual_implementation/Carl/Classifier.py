@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from pyrqa.time_series import TimeSeries
 from pyrqa.settings import Settings
-from pyrqa.computation import RPComputation
+from pyrqa.computation import RQAComputation
 from pyrqa.neighbourhood import FixedRadius
 from pyrqa.metric import EuclideanMetric
 
@@ -31,7 +31,6 @@ for i in range(100):
 
     signal_list.append(base_signal)
 
-
 plt.plot(signal_list[0])
 plt.show()
 
@@ -44,10 +43,18 @@ for signal in signal_list:
                         neighbourhood=FixedRadius(1.0), 
                         similarity_measure=EuclideanMetric(),
                         theiler_corrector=1)
-    computation = RPComputation.create(settings)
-    recurrence_plot = computation.run()
-    RQA_measures = recurrence_plot.recurrence_matrix()
-    RQA_measures_list.append([RQA_measures])  # Encapsulate in list to match feature set format
+    computation = RQAComputation.create(settings)
+    result = computation.run()
+    
+    RQA_measures = [
+        result.recurrence_rate, 
+        result.determinism,
+        result.average_diagonal_line,
+        result.longest_diagonal_line,
+        result.entropy_diagonal_lines
+    ]
+    
+    RQA_measures_list.append(RQA_measures)
 
 # Step 3: Train SVM Classifier
 X_train, X_test, y_train, y_test = train_test_split(RQA_measures_list, label_list, test_size=0.2, random_state=42)
