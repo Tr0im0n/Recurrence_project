@@ -164,7 +164,7 @@ class LivePlotApp:
         # Add text inputs for embedding dimension (m), time delay (T), and threshold (e)
         self.embedding_dim_var = tk.IntVar(value=1)  # Initial value for m
         self.time_delay_var = tk.IntVar(value=1)  # Initial value for T
-        self.threshold_var = tk.IntVar(value=1)  # Initial value for e
+        self.threshold_var = tk.DoubleVar(value=1)  # Initial value for e
 
         self.embedding_dim_label = ttk.Label(self.command_window_data, text="Embedding Dimension (m):")
         self.embedding_dim_label.grid(row=0, column=1, sticky='e')
@@ -196,9 +196,10 @@ class LivePlotApp:
         if not self.is_running:
             return
 
-        file_path = 'sample_data.csv'
-        data_all = pd.read_csv(file_path, sep='\s+')
-        self.data = data_all['SOI']
+        file_path = 'vibration_data_synthetic.csv'
+        self.data_np = pd.read_csv(file_path, sep='\s+')
+        self.data_full = self.data_np.to_numpy().reshape(-1,1)
+        self.data = self.data_full[:1000]
 
         m = int(self.embedding_dim_var.get())
         T = int(self.time_delay_var.get())
@@ -206,7 +207,7 @@ class LivePlotApp:
 
         # Construct embedded vectors
         num_vectors = len(self.data) - (m - 1) * T
-        vectors = np.array([self.data[t:t + m * T:T] for t in range(num_vectors)])
+        vectors = np.array([self.data[t:t + m * T:T] for t in range(num_vectors)]).reshape(-1,1)
 
         # Find recurrence points using distance between embedded vectors
         self.D = squareform(pdist(vectors, metric='euclidean'))
