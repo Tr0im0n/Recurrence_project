@@ -76,12 +76,20 @@ def test2(signal: np.ndarray, m: int = 5):
     :return: The Recurrence plot, clipped?
     """
     my_length = signal.shape[0]
-    signal.reshape(my_length, 1)
+    signal = signal.reshape(my_length, 1)
     my_distances = pdist(signal, "euclidean")
-    my_zeros = np.zero((my_length, my_length - 1))
-    rows, cols = np.triu_indices(my_zeros, k=0)
+    my_zeros = np.zeros((my_length, my_length - 1))
+    rows, cols = np.triu_indices(my_length - 1, k=0)
     my_zeros[rows, cols] = my_distances
-    my_zeros.reshape((my_length - 1, my_length))
+    my_zeros = my_zeros.reshape((my_length - 1, my_length))
+    kernel = np.ones((m, 1))
+    convolved = convolve2d(my_zeros, kernel)
+    print(convolved.shape)
+    plt.imshow(convolved, cmap="gray", origin="lower")
+    plt.show()
+    convolved = convolved.reshape((my_length - m + 1, my_length))
+    plt.imshow(convolved, cmap="gray", origin="lower")
+    plt.show()
 
 
 def convolve_diagonal(signal: np.ndarray, m: int = 5):
@@ -92,9 +100,9 @@ def convolve_diagonal(signal: np.ndarray, m: int = 5):
     :return: The Recurrence plot, clipped?
     """
     my_length = signal.shape[0]
-    signal.reshape(my_length, 1)
+    signal = signal.reshape((my_length, 1))
     time_obj = TimeObject()
-    distances = pdist(signal[:, np.newaxis], metric='euclidean')
+    distances = pdist(signal, metric='euclidean')   # [:, np.newaxis]
     time_obj.new()
     distance_matrix = squareform(distances)
     time_obj.new()
@@ -148,7 +156,7 @@ def main():
 
 if __name__ == "__main__":
     # main()
-    convolve_diagonal(create_signal1())
+    test2(create_signal1())
 
 
 """
