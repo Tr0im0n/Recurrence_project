@@ -7,6 +7,8 @@ from rqa_functions import *
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import tkinter.filedialog as fd
+
 
 class LivePlotApp:
     def __init__(self, root):
@@ -35,7 +37,7 @@ class LivePlotApp:
         self.info_text = tk.Text(self.home_tab, wrap='word', height=10, width=50)
         self.info_text.insert(tk.END,
                               "This GUI allows you to visualize different chaotic systems and analyze their recurrence plots. "
-                              "You can start/stop/reset the live plotting of selected functions and display histograms of recurrence quantification analysis (RQA) measures.")
+                              "You can start/stop/reset the live plotting of selected functions and see the recurrence quantification analysis (RQA) measures.")
         self.info_text.config(state=tk.DISABLED)
         self.info_text.pack(pady=10)
 
@@ -83,9 +85,6 @@ class LivePlotApp:
 
         self.btn_reset_func = ttk.Button(self.command_window_func, text="Reset", command=self.reset_func)
         self.btn_reset_func.grid(row=2, column=0)
-
-        self.btn_histogram_func = ttk.Button(self.command_window_func, text="Show Histogram", command=self.show_histogram_func)
-        self.btn_histogram_func.grid(row=3, column=0)
 
         self.selected_option_func = tk.StringVar()
         functions = ["Lorenz", "Chua", "Rossler", "Chen"]
@@ -136,8 +135,8 @@ class LivePlotApp:
         self.btn_reset_data = ttk.Button(self.command_window_data, text="Reset", command=self.reset_data)
         self.btn_reset_data.grid(row=1, column=0)
 
-        self.btn_histogram_data = ttk.Button(self.command_window_data, text="Show Histogram", command=self.show_histogram_data)
-        self.btn_histogram_data.grid(row=3, column=0)
+        self.btn_load_file = ttk.Button(self.command_window_data, text="Load CSV", command=self.load_csv_data)
+        self.btn_load_file.grid(row=2, column=0)
 
         self.embedding_dim_var = tk.IntVar(value=1)
         self.time_delay_var = tk.IntVar(value=1)
@@ -161,26 +160,45 @@ class LivePlotApp:
         self.rqa_label_data = ttk.Label(self.command_window_data, text="RQA Measures will appear here")
         self.rqa_label_data.grid(row=0, column=3, rowspan=2)
 
+    def load_csv_data(self):
+        file_path = fd.askopenfilename(filetypes=[("CSV files", "*.csv")])
+        if file_path:
+            self.data_np = pd.read_csv(file_path)
+            self.data = self.data_np.to_numpy().flatten()  # Flatten to 1D array for simplicity
+            # self.update_data_plot()
+
+    # def update_data_plot(self):
+    #     if self.data.size > 0:
+    #         self.fig_data.clear()
+    #         ax_data = self.fig_data.add_subplot(111)
+    #         ax_data.plot(self.data, lw=0.5)
+    #         ax_data.set_title("Visualization of Inputted Data")
+    #         ax_data.set_xlabel("Index")
+    #         ax_data.set_ylabel("Value")
+    #         self.canvas_comp_data.draw()
+
     def toggle_buttons(self, state):
         self.btn_reset_func.config(state=state)
-        self.btn_histogram_func.config(state=state)
         self.dropdown_func.config(state=state)
 
     def plot_data(self):
         if not self.is_running:
             return
 
-        file_path = 'vibration_data_synthetic.csv'
-        self.data_np = pd.read_csv(file_path, sep='\s+')
-        self.data_full = self.data_np.to_numpy().reshape(-1,1)
-        self.data = self.data_full[:1000]
+        if self.data.size == 0:
+            file_path = 'vibration_data_synthetic.csv'
+            self.data_np = pd.read_csv(file_path, sep='\s+')
+            self.data = self.data_np.to_numpy().reshape(-1,1)
+        self.data_trunc = self.data[:1000]
 
-        m = int(self.embedding_dim_var.get())
-        T = int(self.time_delay_var.get())
-        epsilon = int(self.threshold_var.get())
+        m = self.embedding_dim_var.get()
+        T = self.time_delay_var.get()
+        epsilon = self.threshold_var.get()
 
-        num_vectors = len(self.data) - (m - 1) * T
-        vectors = np.array([self.data[t:t + m * T:T] for t in range(num_vectors)]).reshape(-1,1)
+        print(m, T, epsilon)
+
+        num_vectors = len(self.data_trunc) - (m - 1) * T
+        vectors = np.array([self.data_trunc[t:t + m * T:T] for t in range(num_vectors)]).reshape(-1,1)
 
         self.D = squareform(pdist(vectors, metric='euclidean'))
         recurrence_matrix = self.D < epsilon
@@ -216,6 +234,10 @@ class LivePlotApp:
         if selected_function_name == 'lorenz':
             new_point = self.xyzs[-1] + lorenz(self.xyzs[-1]) * self.dt
         elif selected_function_name == 'chua':
+            new_point = self.xyzs[-1] + chua(self.xyzs[-1]) * self.dt
+        elif selected_function_name == 'rossler':
+            new_point = self.xyzs[-1] + chua(self.xyzs[-1]) * self.dt
+        elif selected_function_name == 'chen':
             new_point = self.xyzs[-1] + chua(self.xyzs[-1]) * self.dt
         else:
             new_point = self.xyzs[-1]
@@ -256,10 +278,10 @@ class LivePlotApp:
         num_vectors = len(self.x) - (m - 1) * T
         vectors = np.array([self.x[t:t + m * T:T] for t in range(num_vectors)])
         if vectors.size > 0:
-            D = squareform(pdist(vectors, metric='euclidean'))
-            D_max = np.max(D)
+            self.D = squareform(pdist(vectors, metric='euclidean'))
+            D_max = np.max(self.D)
             epsilon = 0.1 * D_max
-            recurrence_matrix = D < epsilon
+            recurrence_matrix = self.D < epsilon
             x_rec, y_rec = np.argwhere(recurrence_matrix).T
             ax_rp_func.scatter(x_rec, y_rec, s=1)
             ax_rp_func.set_title("Recurrence Plot")
@@ -271,6 +293,7 @@ class LivePlotApp:
             rqa_measures_func["LAM2"] = lam2
             rqa_measures_func["Lmax2"] = lmax2
             display_rqa_measures(self.rqa_label_func, rqa_measures_func)
+
 
     def start_func(self):
         if not self.is_running:
@@ -307,38 +330,8 @@ class LivePlotApp:
         self.canvas_rp_data.draw()
 
     def on_select(self, *args):
-        self.reset_func()
+        self.selected_value = self.selected_option_func.get()
 
-    def show_histogram_func(self):
-        vectors = np.array([self.x[t:t + 10 * 3:3] for t in range(len(self.x) - (10 - 1) * 3)])
-        if vectors.size > 0:
-            D = squareform(pdist(vectors, metric='euclidean'))
-            D_max = np.max(D)
-            epsilon = 0.1 * D_max
-            recurrence_matrix = D < epsilon
-            diag_lengths = [len(list(group)) for diag in [np.diagonal(recurrence_matrix, offset=i) for i in range(-recurrence_matrix.shape[0] + 1, recurrence_matrix.shape[1]) if i != 0] for value, group in groupby(diag) if value == 1]
-            diag_lengths = [length for length in diag_lengths if length >= 2]
-            self.show_histogram(diag_lengths)
-
-    def show_histogram_data(self):
-        vectors = np.array([self.data[t:t + int(self.embedding_dim_var.get()) * int(self.time_delay_var.get()):int(self.time_delay_var.get())] for t in range(len(self.data) - (int(self.embedding_dim_var.get()) - 1) * int(self.time_delay_var.get()))]).reshape(-1,1)
-        if vectors.size > 0:
-            D = squareform(pdist(vectors, metric='euclidean'))
-            epsilon = int(self.threshold_var.get())
-            recurrence_matrix = D < epsilon
-            diag_lengths = [len(list(group)) for diag in [np.diagonal(recurrence_matrix, offset=i) for i in range(-recurrence_matrix.shape[0] + 1, recurrence_matrix.shape[1]) if i != 0] for value, group in groupby(diag) if value == 1]
-            diag_lengths = [length for length in diag_lengths if length >= 2]
-            self.show_histogram(diag_lengths)
-
-    def show_histogram(self, diag_lengths):
-        unique_lengths, counts = np.unique(diag_lengths, return_counts=True)
-        fig, ax = plt.subplots()
-        ax.bar(unique_lengths, counts)
-        ax.set_xlabel("Diagonal Length")
-        ax.set_ylabel("Count")
-        ax.set_title("Histogram of Diagonal Lengths")
-        fig.canvas.manager.set_window_title("Histogram")
-        plt.show()
 
 if __name__ == "__main__":
     root = tk.Tk()

@@ -67,11 +67,9 @@ def display_rqa_measures(rqa_label, rqa_measures):
     text = "\n".join([f"{k}: {v:.4f}" for k, v in rqa_measures.items()])
     rqa_label.config(text=text)
 
-def show_histogram(diag_lengths):
-    unique_lengths, counts = np.unique(diag_lengths, return_counts=True)
-    fig, ax = plt.subplots()
-    ax.bar(unique_lengths, counts)
-    ax.set_xlabel("Diagonal Length")
-    ax.set_ylabel("Count")
-    ax.set_title("Histogram of Diagonal Lengths")
-    plt.show()
+def extract_diagonal_lengths(recurrence_matrix):
+    num_points = recurrence_matrix.shape[0]
+    diagonals = [np.diag(recurrence_matrix, k) for k in range(-num_points + 1, num_points)]
+    diag_lengths = [len(list(group)) for diag in diagonals for k, group in groupby(diag) if k == 1]
+    diag_lengths = [length for length in diag_lengths if length >= 2]  # Exclude diagonals of length < 2
+    return diag_lengths
