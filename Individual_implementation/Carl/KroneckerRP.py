@@ -16,7 +16,7 @@ def lorenz(t, Y, sigma, rho, beta):
     x, y, z = Y
     return [sigma * (y - x), x * (rho - z) - y, x * y - beta * z]
 
-def fastRP(timeseries, m, T, epsilon):
+def RecurrencePlot(timeseries, m, T, epsilon):
     l = timeseries.shape[0]
     ones = np.ones_like(timeseries)
 
@@ -72,7 +72,7 @@ epsilon = 75 # threshold
 
 m = min_embedding_dim(timeseries, max_dim=50, T=T)
 
-recurrence_matrix = fastRP(timeseries, m, T, epsilon)
+recurrence_matrix = RecurrencePlot(timeseries, m, T, epsilon)
 
 #Plot the recurrence matrix
 plt.imshow(recurrence_matrix, cmap='binary', origin='lower')

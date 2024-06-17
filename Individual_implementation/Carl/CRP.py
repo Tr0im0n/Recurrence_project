@@ -5,7 +5,6 @@ from scipy.spatial.distance import pdist, squareform
 import numpy as np
 from scipy.integrate import solve_ivp
 from scipy.spatial.distance import cdist
-import pyunicorn
 
 # Differential equations for the Lorenz system
 def lorenz(t, Y, sigma, rho, beta):
@@ -23,7 +22,7 @@ def simulate_system(func, params, initial_state, t_span, t_eval):
     return sol.y[0]  # Returning the first component for simplicity
 
 # Generate Cross Recurrence Plot
-def generateCRP(sigma, rho, beta, a, b, c, m, T, epsilon):
+def CRP(sigma, rho, beta, a, b, c, m, T, epsilon):
     # Simulation settings
     initial_state = [1.0, 1.0, 1.0]
     t_span = (0, 40)
@@ -50,7 +49,7 @@ a, b, c = 0.2, 0.2, 5.7
 m, T, epsilon = 2, 1, 10  # Example values for embedding dimension, time delay, and distance threshold
 
 # Generate and visualize the Cross Recurrence Plot
-crp = generateCRP(sigma, rho, beta, a, b, c, m, T, epsilon)
+crp = CRP(sigma, rho, beta, a, b, c, m, T, epsilon)
 
 # Plotting
 plt.figure(figsize=(8, 8))
