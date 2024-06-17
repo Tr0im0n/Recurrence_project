@@ -6,6 +6,7 @@ from attractor_functions import *
 from rqa_functions import *
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 class LivePlotApp:
     def __init__(self, root):
@@ -83,7 +84,7 @@ class LivePlotApp:
         self.btn_reset_func = ttk.Button(self.command_window_func, text="Reset", command=self.reset_func)
         self.btn_reset_func.grid(row=2, column=0)
 
-        self.btn_histogram_func = ttk.Button(self.command_window_func, text="Show Histogram", command=lambda: show_histogram(self))
+        self.btn_histogram_func = ttk.Button(self.command_window_func, text="Show Histogram", command=self.show_histogram_func)
         self.btn_histogram_func.grid(row=3, column=0)
 
         self.selected_option_func = tk.StringVar()
@@ -135,7 +136,7 @@ class LivePlotApp:
         self.btn_reset_data = ttk.Button(self.command_window_data, text="Reset", command=self.reset_data)
         self.btn_reset_data.grid(row=1, column=0)
 
-        self.btn_histogram_data = ttk.Button(self.command_window_data, text="Show Histogram", command=lambda: show_histogram(self))
+        self.btn_histogram_data = ttk.Button(self.command_window_data, text="Show Histogram", command=self.show_histogram_data)
         self.btn_histogram_data.grid(row=3, column=0)
 
         self.embedding_dim_var = tk.IntVar(value=1)
@@ -307,6 +308,37 @@ class LivePlotApp:
 
     def on_select(self, *args):
         self.reset_func()
+
+    def show_histogram_func(self):
+        vectors = np.array([self.x[t:t + 10 * 3:3] for t in range(len(self.x) - (10 - 1) * 3)])
+        if vectors.size > 0:
+            D = squareform(pdist(vectors, metric='euclidean'))
+            D_max = np.max(D)
+            epsilon = 0.1 * D_max
+            recurrence_matrix = D < epsilon
+            diag_lengths = [len(list(group)) for diag in [np.diagonal(recurrence_matrix, offset=i) for i in range(-recurrence_matrix.shape[0] + 1, recurrence_matrix.shape[1]) if i != 0] for value, group in groupby(diag) if value == 1]
+            diag_lengths = [length for length in diag_lengths if length >= 2]
+            self.show_histogram(diag_lengths)
+
+    def show_histogram_data(self):
+        vectors = np.array([self.data[t:t + int(self.embedding_dim_var.get()) * int(self.time_delay_var.get()):int(self.time_delay_var.get())] for t in range(len(self.data) - (int(self.embedding_dim_var.get()) - 1) * int(self.time_delay_var.get()))]).reshape(-1,1)
+        if vectors.size > 0:
+            D = squareform(pdist(vectors, metric='euclidean'))
+            epsilon = int(self.threshold_var.get())
+            recurrence_matrix = D < epsilon
+            diag_lengths = [len(list(group)) for diag in [np.diagonal(recurrence_matrix, offset=i) for i in range(-recurrence_matrix.shape[0] + 1, recurrence_matrix.shape[1]) if i != 0] for value, group in groupby(diag) if value == 1]
+            diag_lengths = [length for length in diag_lengths if length >= 2]
+            self.show_histogram(diag_lengths)
+
+    def show_histogram(self, diag_lengths):
+        unique_lengths, counts = np.unique(diag_lengths, return_counts=True)
+        fig, ax = plt.subplots()
+        ax.bar(unique_lengths, counts)
+        ax.set_xlabel("Diagonal Length")
+        ax.set_ylabel("Count")
+        ax.set_title("Histogram of Diagonal Lengths")
+        fig.canvas.manager.set_window_title("Histogram")
+        plt.show()
 
 if __name__ == "__main__":
     root = tk.Tk()

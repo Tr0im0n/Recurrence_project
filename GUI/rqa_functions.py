@@ -63,17 +63,15 @@ def calculate_manual_det_lam_lmax(recurrence_matrix):
 
     return det2, lam2, lmax2
 
-
 def display_rqa_measures(rqa_label, rqa_measures):
     text = "\n".join([f"{k}: {v:.4f}" for k, v in rqa_measures.items()])
     rqa_label.config(text=text)
 
 def show_histogram(diag_lengths):
-    unique_lengths = np.unique(diag_lengths)
-    counts = [diag_lengths.count(ul) for ul in unique_lengths]
-    plt.figure()
-    plt.bar(unique_lengths, counts)
-    plt.xlabel("Diagonal Length")
-    plt.ylabel("Count")
-    plt.title("Histogram of Diagonal Lengths")
+    unique_lengths, counts = np.unique(diag_lengths, return_counts=True)
+    fig, ax = plt.subplots()
+    ax.bar(unique_lengths, counts)
+    ax.set_xlabel("Diagonal Length")
+    ax.set_ylabel("Count")
+    ax.set_title("Histogram of Diagonal Lengths")
     plt.show()
