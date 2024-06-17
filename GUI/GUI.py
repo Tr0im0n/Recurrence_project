@@ -1,7 +1,11 @@
+import tkinter as tk
+from tkinter import ttk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from scipy.spatial.distance import pdist, squareform
 from attractor_functions import *
 from rqa_functions import *
 import pandas as pd
+
 
 class LivePlotApp:
     def __init__(self, root):
@@ -235,7 +239,7 @@ class LivePlotApp:
         self.canvas_rp_data.draw()
 
         # Calculate and display RQA measures
-        rqa_measures_data = calculate_rqa_measures_pyrqa(self, vectors, epsilon)
+        rqa_measures_data = calculate_rqa_measures_pyrqa(vectors, epsilon)
         # det2, lam2 = self.calculate_manual_det_lam(recurrence_matrix)
         # rqa_measures["DET2"] = det2
         # rqa_measures["LAM2"] = lam2
@@ -297,7 +301,7 @@ class LivePlotApp:
             ax_rp_func.set_title("Recurrence Plot")
             ax_rp_func.set_xlabel("Vector Index")
             ax_rp_func.set_ylabel("Vector Index")
-            rqa_measures_func = calculate_rqa_measures_pyrqa(self, vectors, epsilon)
+            rqa_measures_func = calculate_rqa_measures_pyrqa(vectors, epsilon)
             #det2, lam2 = self.calculate_manual_det_lam(recurrence_matrix)
             #rqa_measures["DET2"] = det2
             #rqa_measures["LAM2"] = lam2
