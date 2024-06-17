@@ -93,12 +93,21 @@ class LivePlotApp:
         self.dropdown_func.grid(row=0, column=1)
         self.selected_option_func.trace("w", self.on_select)
 
+        self.slider_window = ttk.Frame(self.command_window_func)
+        self.slider_window.grid(row=1, column=1, sticky='nsew')
+
+        self.time_step_var = tk.IntVar(value=1)
+        self.slider_label = ttk.Label(self.slider_window, text="Animation Speed:")
+        self.slider_label.pack()
+        self.time_step_slider = ttk.Scale(self.slider_window, from_=1, to=10, variable=self.time_step_var,
+                                          orient=tk.HORIZONTAL)
+        self.time_step_slider.pack()
+
         self.rqa_label_func = ttk.Label(self.command_window_func, text="RQA Measures will appear here")
         self.rqa_label_func.grid(row=0, column=2, rowspan=2)
 
         self.is_running = False
         self.xyzs = np.array([[0., 1., 1.05]])
-        self.time_step = 0
         self.dt = 0.01
 
     def create_data_tab(self):
@@ -129,14 +138,15 @@ class LivePlotApp:
         self.command_window_data.rowconfigure(2, weight=1)
         self.command_window_data.rowconfigure(3, weight=1)
 
+        self.btn_load_file = ttk.Button(self.command_window_data, text="Load CSV", command=self.load_csv_data)
+        self.btn_load_file.grid(row=0, column=0)
+
         self.btn_run_data = ttk.Button(self.command_window_data, text="Run", command=self.run_data)
-        self.btn_run_data.grid(row=0, column=0)
+        self.btn_run_data.grid(row=1, column=0)
 
         self.btn_reset_data = ttk.Button(self.command_window_data, text="Reset", command=self.reset_data)
-        self.btn_reset_data.grid(row=1, column=0)
+        self.btn_reset_data.grid(row=2, column=0)
 
-        self.btn_load_file = ttk.Button(self.command_window_data, text="Load CSV", command=self.load_csv_data)
-        self.btn_load_file.grid(row=2, column=0)
 
         self.embedding_dim_var = tk.IntVar(value=1)
         self.time_delay_var = tk.IntVar(value=1)
@@ -165,17 +175,18 @@ class LivePlotApp:
         if file_path:
             self.data_np = pd.read_csv(file_path)
             self.data = self.data_np.to_numpy().flatten()  # Flatten to 1D array for simplicity
-            # self.update_data_plot()
+            self.run_data()
+            self.plot_data()
 
-    # def update_data_plot(self):
-    #     if self.data.size > 0:
-    #         self.fig_data.clear()
-    #         ax_data = self.fig_data.add_subplot(111)
-    #         ax_data.plot(self.data, lw=0.5)
-    #         ax_data.set_title("Visualization of Inputted Data")
-    #         ax_data.set_xlabel("Index")
-    #         ax_data.set_ylabel("Value")
-    #         self.canvas_comp_data.draw()
+    def update_data_plot(self):
+        if self.data.size > 0:
+            self.fig_data.clear()
+            ax_data = self.fig_data.add_subplot(111)
+            ax_data.plot(self.data, lw=0.5)
+            ax_data.set_title("Visualization of Inputted Data")
+            ax_data.set_xlabel("Index")
+            ax_data.set_ylabel("Value")
+            self.canvas_comp_data.draw()
 
     def toggle_buttons(self, state):
         self.btn_reset_func.config(state=state)
@@ -230,19 +241,23 @@ class LivePlotApp:
     def update_plot(self):
         if not self.is_running:
             return
-        selected_function_name = self.selected_option_func.get().lower()
-        if selected_function_name == 'lorenz':
-            new_point = self.xyzs[-1] + lorenz(self.xyzs[-1]) * self.dt
-        elif selected_function_name == 'chua':
-            new_point = self.xyzs[-1] + chua(self.xyzs[-1]) * self.dt
-        elif selected_function_name == 'rossler':
-            new_point = self.xyzs[-1] + chua(self.xyzs[-1]) * self.dt
-        elif selected_function_name == 'chen':
-            new_point = self.xyzs[-1] + chua(self.xyzs[-1]) * self.dt
-        else:
-            new_point = self.xyzs[-1]
+        self.time_step = self.time_step_var.get()
+        print(self.time_step)
+        for i in range(self.time_step):
+            selected_function_name = self.selected_option_func.get().lower()
+            if selected_function_name == 'lorenz':
+                new_point = self.xyzs[-1] + lorenz(self.xyzs[-1]) * self.dt
+            elif selected_function_name == 'chua':
+                new_point = self.xyzs[-1] + chua(self.xyzs[-1]) * self.dt
+            elif selected_function_name == 'rossler':
+                new_point = self.xyzs[-1] + chua(self.xyzs[-1]) * self.dt
+            elif selected_function_name == 'chen':
+                new_point = self.xyzs[-1] + chua(self.xyzs[-1]) * self.dt
+            else:
+                new_point = self.xyzs[-1]
 
-        self.xyzs = np.append(self.xyzs, [new_point], axis=0)
+            self.xyzs = np.append(self.xyzs, [new_point], axis=0)
+
         self.fig_ps_func.clear()
         ax_ps = self.fig_ps_func.add_subplot(111, projection='3d')
         ax_ps.plot(*self.xyzs.T, lw=0.5)
@@ -320,7 +335,7 @@ class LivePlotApp:
     def run_data(self):
         if not self.is_running:
             self.is_running = True
-            self.plot_data()
+        self.plot_data()
 
     def reset_data(self):
         self.is_running = False
