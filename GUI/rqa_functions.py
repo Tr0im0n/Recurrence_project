@@ -48,9 +48,10 @@ def calculate_manual_det_lam(self, recurrence_matrix):
     return det2, lam2
 
 
-def display_rqa_measures(self, rqa_measures):
+def display_rqa_measures(self, rqa_label, rqa_measures):
     text = "\n".join([f"{k}: {v:.4f}" for k, v in rqa_measures.items()])
-    self.rqa_label.config(text=text)
+    print(text)
+    rqa_label.config(text=text)
 
 def show_histogram(self):
     if hasattr(self, 'diag_lengths'):
