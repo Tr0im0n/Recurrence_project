@@ -30,6 +30,7 @@ def RecurrencePlot(timeseries, m, T, epsilon):
     recurrence_matrix = (distance_matrix <= epsilon).astype(int)
     return recurrence_matrix
 
+# False Nearest Neighbor Method to find minimum embedding dimension
 def min_embedding_dim(timeseries, max_dim, T=1, Rtol=10.0, Atol=2.0):
     n = len(timeseries)
 
@@ -70,7 +71,7 @@ m = 4 # embedding dimension
 T = 2 # delay
 epsilon = 75 # threshold
 
-m = min_embedding_dim(timeseries, max_dim=50, T=T)
+# m = min_embedding_dim(timeseries, max_dim=50, T=T)
 
 recurrence_matrix = RecurrencePlot(timeseries, m, T, epsilon)
 
