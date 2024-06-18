@@ -29,13 +29,23 @@ def sine(frequency: float, amplitude: float, xs: np.ndarray):
     return amplitude*np.sin(frequency*np.pi*xs)
 
 
-def spikes(length: int = 100, spike_width: int = None, spike_height: float = None, probability_at_end: float = None):
+def spikes(length: int = 100, spike_width: int = None, spike_height: float = None,
+           probability_at_end: float = None, return_spike_locations: bool = False):
+    """
+    First determines locations where to create spikes, then makes spikes at those locations.
+    :param length:
+    :param spike_width:
+    :param spike_height:
+    :param probability_at_end:
+    :param return_spike_locations:
+    :return:
+    """
     spike_width = 9 if spike_width is None else spike_width
     spike_height = 10. if spike_height is None else spike_height
     probability_at_end = 0.01 if probability_at_end is None else probability_at_end
     spike_middle = (spike_width - 1) / 2
     new_length = length - spike_width
-    probability_array = np.linspace(0, 0.01, new_length)
+    probability_array = np.linspace(0, probability_at_end, new_length)
     random_array = np.random.rand(new_length)
     spike_locations = random_array < probability_array
     ans = np.zeros(length)
@@ -43,22 +53,37 @@ def spikes(length: int = 100, spike_width: int = None, spike_height: float = Non
     for i, val in enumerate(spike_locations):
         if val:
             ans[i:i+spike_width] += single_spike
+    if return_spike_locations:
+        return ans, spike_locations
     return ans
 
 
-def composite_signal(length: int, sine_tuples=None, noise_amplitude: float = None,
-                     spike_width: int = None, spike_height: float = None):
+def composite_signal(length: int, sine_tuples=None, *, noise_amplitude: float = None,
+                     spike_width: int = None, spike_height: float = None,
+                     return_spike_locations: bool = False):
+    """
+    Makes a composite signal of both sines, noises and spikes
+    :param length:
+    :param sine_tuples:
+    :param noise_amplitude:
+    :param spike_width:
+    :param spike_height:
+    :param return_spike_locations:
+    :return:
+    """
     sine_tuples = tuple() if sine_tuples is None else sine_tuples
     xs = np.arange(0, length, 1)
-    print(xs)
     array_list = [sine(freq, amp, xs) for freq, amp in sine_tuples]
-    print(array_list)
     array_list.append(noise(length, noise_amplitude, noise_type="uniform"))
-    array_list.append(spikes(length, spike_width, spike_height))
-    return sum(array_list)
+    if not return_spike_locations:
+        array_list.append(spikes(length, spike_width, spike_height))
+        return sum(array_list)
+    spikes_array, spike_locations = spikes(length, spike_width, spike_height)
+    array_list.append(spikes_array)
+    return sum(array_list), spike_locations
 
 
-test1 = composite_signal(1000, ((0.1, 2), (0.2, 1)))
+test1 = composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8)
 plt.plot(test1)
 plt.show()
 

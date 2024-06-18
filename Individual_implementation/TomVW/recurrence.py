@@ -82,6 +82,7 @@ def test2(signal: np.ndarray, m: int = 5):
     rows, cols = np.triu_indices(my_length - 1, k=0)
     my_zeros[rows, cols] = my_distances
     my_zeros = my_zeros.reshape((my_length - 1, my_length))
+    print(my_zeros.shape)
     kernel = np.ones((m, 1))
     convolved = convolve2d(my_zeros, kernel)
     print(convolved.shape)
