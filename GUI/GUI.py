@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import tkinter.filedialog as fd
+from home_tab import homeTab
 
 
 class LivePlotApp:
@@ -16,6 +17,7 @@ class LivePlotApp:
         self.root.title("Live Data and Recurrence Plot")
         self.create_tabs()
         self.create_home_tab()
+        # self.create_home_tab = homeTab(self.notebook)
         self.create_functions_tab()
         self.create_data_tab()
 
@@ -30,22 +32,7 @@ class LivePlotApp:
         self.notebook.add(self.data_tab, text='Plotting Data')
         self.notebook.pack(expand=1, fill='both')
 
-    def create_home_tab(self):
-        self.title_label = ttk.Label(self.home_tab, text="Welcome to Live Data and Recurrence Plot GUI", font=("Helvetica", 16))
-        self.title_label.pack(pady=10)
 
-        self.info_text = tk.Text(self.home_tab, wrap='word', height=10, width=50)
-        self.info_text.insert(tk.END,
-                              "This GUI allows you to visualize different chaotic systems and analyze their recurrence plots. "
-                              "You can start/stop/reset the live plotting of selected functions and see the recurrence quantification analysis (RQA) measures.")
-        self.info_text.config(state=tk.DISABLED)
-        self.info_text.pack(pady=10)
-
-        self.btn_functions_tab = ttk.Button(self.home_tab, text="Go to Plotting Functions", command=lambda: self.notebook.select(self.function_tab))
-        self.btn_functions_tab.pack(pady=5)
-
-        self.btn_data_tab = ttk.Button(self.home_tab, text="Go to Plotting Data", command=lambda: self.notebook.select(self.data_tab))
-        self.btn_data_tab.pack(pady=5)
 
     def create_functions_tab(self):
         self.function_tab.columnconfigure(0, weight=1)
@@ -70,7 +57,7 @@ class LivePlotApp:
         self.command_window_func.grid(row=0, column=0, sticky='nsew')
 
         self.command_window_func.columnconfigure(0, weight=1)
-        self.command_window_func.columnconfigure(1, weight=1)
+        self.command_window_func.columnconfigure(1, weight=2)
         self.command_window_func.columnconfigure(2, weight=1)
         self.command_window_func.rowconfigure(0, weight=1)
         self.command_window_func.rowconfigure(1, weight=1)
@@ -93,6 +80,7 @@ class LivePlotApp:
         self.dropdown_func.grid(row=0, column=1)
         self.selected_option_func.trace("w", self.on_select)
 
+        # Animation speed Control
         self.slider_window = ttk.Frame(self.command_window_func)
         self.slider_window.grid(row=1, column=1, sticky='nsew')
 
@@ -103,12 +91,85 @@ class LivePlotApp:
                                           orient=tk.HORIZONTAL)
         self.time_step_slider.pack()
 
+        # Set up for accepting user inputs
+        self.init_cond_frame = tk.Frame(self.command_window_func)
+        self.init_cond_frame.grid(row=2, column=1, sticky='nsew')
+
+        self.command_window_func.columnconfigure(0, weight=1)
+        self.command_window_func.columnconfigure(1, weight=1)
+        self.command_window_func.columnconfigure(2, weight=1)
+        self.command_window_func.columnconfigure(3, weight=1)
+        self.command_window_func.rowconfigure(0, weight=1)
+        self.command_window_func.rowconfigure(1, weight=1)
+        self.command_window_func.rowconfigure(2, weight=1)
+        self.command_window_func.rowconfigure(3, weight=1)
+
+        # Initial Conditions
+        self.init_cond_label = tk.Label(self.init_cond_frame, text='Initial Conditions:')
+        self.init_cond_label.grid(row=0,column=0, columnspan=2)
+        self.init_cond_x_label = tk.Label(self.init_cond_frame, text='X:')
+        self.init_cond_x_label.grid(row=1, column=0)
+        self.init_cond_y_label = tk.Label(self.init_cond_frame, text='Y:')
+        self.init_cond_y_label.grid(row=2, column=0)
+        self.init_cond_z_label = tk.Label(self.init_cond_frame, text='Z:')
+        self.init_cond_z_label.grid(row=3, column=0)
+
+        self.init_cond_x_var = tk.IntVar(value=1)
+        self.init_cond_y_var = tk.IntVar(value=1)
+        self.init_cond_z_var = tk.IntVar(value=1)
+
+        self.init_cond_x_input = tk.Entry(self.init_cond_frame, textvariable=self.init_cond_x_var)
+        self.init_cond_x_input.grid(row=1, column=1)
+        self.init_cond_y_input = tk.Entry(self.init_cond_frame, textvariable=self.init_cond_y_var)
+        self.init_cond_y_input.grid(row=2, column=1)
+        self.init_cond_z_input = tk.Entry(self.init_cond_frame, textvariable=self.init_cond_z_var)
+        self.init_cond_z_input.grid(row=3, column=1)
+
+        # Input parameters
+        self.rec_param_label = tk.Label(self.init_cond_frame, text='Embedding Parameters:')
+        self.rec_param_label.grid(row=0, column=2, columnspan=2)
+        self.embedding_dim_label_func = tk.Label(self.init_cond_frame, text='m:')
+        self.embedding_dim_label_func.grid(row=1, column=2)
+        self.time_delay_label_func = tk.Label(self.init_cond_frame, text='T:')
+        self.time_delay_label_func.grid(row=2, column=2)
+        self.threshold_label_func = tk.Label(self.init_cond_frame, text='E:')
+        self.threshold_label_func.grid(row=3, column=2)
+
+        self.embedding_dim_var_func = tk.IntVar(value=1)
+        self.time_delay_var_func = tk.IntVar(value=1)
+        self.threshold_var_func = tk.IntVar(value=1)
+
+        self.embedding_dim_input_func = tk.Entry(self.init_cond_frame, textvariable=self.embedding_dim_var_func)
+        self.embedding_dim_input_func.grid(row=1, column=3)
+        self.time_delay_input_func = tk.Entry(self.init_cond_frame, textvariable=self.time_delay_var_func)
+        self.time_delay_input_func.grid(row=2, column=3)
+        self.threshold_input_func = tk.Entry(self.init_cond_frame, textvariable=self.threshold_var_func)
+        self.threshold_input_func.grid(row=3, column=3)
+
         self.rqa_label_func = ttk.Label(self.command_window_func, text="RQA Measures will appear here")
         self.rqa_label_func.grid(row=0, column=2, rowspan=2)
 
         self.is_running = False
-        self.xyzs = np.array([[0., 1., 1.05]])
         self.dt = 0.01
+        # self.xyzs = np.array([[self.init_cond_x_var.get(), self.init_cond_y_var.get(), self.init_cond_z_var.get()]])
+
+
+    def create_home_tab(self):
+        self.title_label = ttk.Label(self.home_tab, text="Welcome to Live Data and Recurrence Plot GUI", font=("Helvetica", 16))
+        self.title_label.pack(pady=10)
+
+        self.info_text = tk.Text(self.home_tab, wrap='word', height=10, width=50)
+        self.info_text.insert(tk.END,
+                              "This GUI allows you to visualize different chaotic systems and analyze their recurrence plots. "
+                              "You can start/stop/reset the live plotting of selected functions and see the recurrence quantification analysis (RQA) measures.")
+        self.info_text.config(state=tk.DISABLED)
+        self.info_text.pack(pady=10)
+
+        self.btn_functions_tab = ttk.Button(self.home_tab, text="Go to Plotting Functions", command=lambda: self.notebook.select(self.function_tab))
+        self.btn_functions_tab.pack(pady=5)
+
+        self.btn_data_tab = ttk.Button(self.home_tab, text="Go to Plotting Data", command=lambda: self.notebook.select(self.data_tab))
+        self.btn_data_tab.pack(pady=5)
 
     def create_data_tab(self):
         self.data_tab.columnconfigure(0, weight=1)
@@ -242,7 +303,7 @@ class LivePlotApp:
         if not self.is_running:
             return
         self.time_step = self.time_step_var.get()
-        print(self.time_step)
+        print(self.xyzs[0])
         for i in range(self.time_step):
             selected_function_name = self.selected_option_func.get().lower()
             if selected_function_name == 'lorenz':
@@ -314,6 +375,7 @@ class LivePlotApp:
         if not self.is_running:
             self.is_running = True
             self.toggle_buttons("disabled")
+            self.xyzs = np.array([[self.init_cond_x_var.get(), self.init_cond_y_var.get(), self.init_cond_z_var.get()]])
             self.update_plot()
 
     def stop_func(self):
