@@ -5,25 +5,26 @@ from itertools import groupby
 import matplotlib.pyplot as plt
 import simdat as sd
 
+# --------------------------------------------------------
+# TO-DO:
+# 1. verify correctness of rqa measures
+# 2. Check each RQA-M reaction to spike type event
+# 3. implement decision tree like classifier (If RR > 0.5 then 1 else 0 etc.)
+# 4. Try different event types
+# 5. Set up WOA-SVM training and testing
+# --------------------------------------------------------
+
 def plot_rqa_measures(recurrence_plots, rqa_measures):
-    # Extracting each RQA measure
-    rrs = [measure[0] for measure in rqa_measures]  # Recurrence Rates
-    dets = [measure[1] for measure in rqa_measures]  # Determinism
-    ls = [measure[2] for measure in rqa_measures]  # Average Diagonal Line Length
-    divs = [measure[3] for measure in rqa_measures]  # Divergence
-
     # Create separate plots for each RQA measure
-    measures = [rrs, dets, ls, divs]
-    titles = ['Recurrence Rate (RR)', 'Determinism (DET)', 'Average Diagonal Line Length (L)', 'Divergence (DIV)']
-    y_labels = ['RR', 'DET', 'L', 'DIV']
-
-    plt.figure(figsize=(10, 8))  # Adjust the figure size as needed
-    for i, (measure, title, label) in enumerate(zip(measures, titles, y_labels)):
-        ax = plt.subplot(4, 1, i + 1)
-        ax.plot(measure, marker='o', linestyle='-', color='b')
-        ax.set_title(title)
+    measure_names = ['Recurrence Rate', 'Determinism', 'Laminarity', 'Ratio DET/RR', 'Avg Diagonal Length', 'Trapping Time', 'Divergence', 'Entropy', 'Trend']
+    plt.figure(figsize=(12, 18))  # Adjust the figure size as needed
+    for index, name in enumerate(measure_names):
+        measure_data = [measure[index] for measure in rqa_measures]
+        ax = plt.subplot(len(measure_names), 1, index + 1)
+        ax.plot(measure_data, linestyle='-', color='b')
+        ax.set_title(name)
         ax.set_xlabel('Recurrence Plot Index')
-        ax.set_ylabel(label)
+        ax.set_ylabel(name)
         ax.grid(True)
 
     plt.tight_layout()
@@ -50,22 +51,64 @@ def calcRP(timeseries, m, T, epsilon):
     recurrence_matrix = (normalized_distance_matrix <= epsilon).astype(int)
     return recurrence_matrix
 
-def calcRQAMeasures(rp):
+def calcRQAMeasures(rp, min_line_length=2):
     n = rp.shape[0]
-    rr = np.sum(rp) / (n * n)  # Recurrence Rate
+    # Compute Recurrence Rate (RR)
+    RR = np.sum(rp) / (n * n)
 
-    # Finding diagonals (at least 2 points)
-    diagonals = np.array([np.sum(np.diagonal(rp, offset=i)) for i in range(1, n)])
-    det = np.sum(diagonals) / np.sum(rp) if np.sum(rp) != 0 else 0  # Determinism
+    # Finding diagonals for Determinism and Average Diagonal Line Length
+    diagonals = []
+    for offset in range(-n + 1, n):
+        diagonal = np.diagonal(rp, offset=offset)
+        for k, g in groupby(diagonal):
+            if k == 1:
+                length = len(list(g))
+                if length >= min_line_length:
+                    diagonals.append(length)
+                    
+    if diagonals:
+        DET = sum(diagonals) / np.sum(rp)  # Determinism
+        L = np.mean(diagonals)             # Average Diagonal Line Length
+        DIV = 1 / max(diagonals)           # Divergence
+    else:
+        DET = 0
+        L = 0
+        DIV = 0
 
-    # Average Diagonal Line Length
-    diag_lengths = np.array([len(list(g)) for offset in range(-n + 1, n) for k, g in groupby(np.diagonal(rp, offset)) if k])
-    l = np.mean(diag_lengths) if len(diag_lengths) > 0 else 0
+    # Compute Laminarity and Trapping Time from vertical lines
+    verticals = []
+    for j in range(n):
+        column = rp[:, j]
+        for k, g in groupby(column):
+            if k == 1:
+                length = len(list(g))
+                if length >= min_line_length:
+                    verticals.append(length)
+    
+    if verticals:
+        TT = np.mean(verticals)  # Trapping Time
+        LAM = sum(verticals) / np.sum(rp)  # Laminarity
+    else:
+        TT = 0
+        LAM = 0
 
-    # Divergence
-    div = 1 / np.max(diag_lengths) if len(diag_lengths) > 0 else 0
+    # Calculate Entropy of diagonal line lengths
+    if diagonals:
+        line_length_counts = np.bincount(diagonals)
+        p = line_length_counts[line_length_counts.nonzero()] / sum(line_length_counts)
+        ENT = -np.sum(p * np.log(p))
+    else:
+        ENT = 0
 
-    return rr, det, l, div  # Recurrence Rate, Determinism, Average Diagonal Line Length, Divergence
+    # Calculate Trend
+    trend_lines = [np.sum(np.diagonal(rp, offset=i)) for i in range(-n + 1, n)]
+    trend_slope, _ = np.polyfit(range(len(trend_lines)), trend_lines, 1)
+    TREND = trend_slope
+
+    # Ratio between DET and RR
+    DET_RR = DET / RR if RR > 0 else 0
+
+    return RR, DET, LAM, DET_RR, L, TT, DIV, ENT, TREND
 
 timeseries = sd.composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8)
 
