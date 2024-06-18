@@ -3,17 +3,31 @@ from scipy.spatial.distance import pdist, squareform
 from scipy.integrate import solve_ivp
 from itertools import groupby
 import matplotlib.pyplot as plt
+import simdat as sd
 
-def getexampledata():
-    sigma, rho, beta = 10, 28, 8/3
-    initial_state = [1.0, 1.0, 1.0]
-    t_span = (0, 40)
-    t_eval = np.linspace(t_span[0], t_span[1], num=1000)
-    sol = solve_ivp(lorenz, t_span, initial_state, args=(sigma, rho, beta), t_eval=t_eval, method='RK45')
-    return sol.y[0]
-def lorenz(t, Y, sigma, rho, beta):
-    x, y, z = Y
-    return [sigma * (y - x), x * (rho - z) - y, x * y - beta * z]
+def plot_rqa_measures(recurrence_plots, rqa_measures):
+    # Extracting each RQA measure
+    rrs = [measure[0] for measure in rqa_measures]  # Recurrence Rates
+    dets = [measure[1] for measure in rqa_measures]  # Determinism
+    ls = [measure[2] for measure in rqa_measures]  # Average Diagonal Line Length
+    divs = [measure[3] for measure in rqa_measures]  # Divergence
+
+    # Create separate plots for each RQA measure
+    measures = [rrs, dets, ls, divs]
+    titles = ['Recurrence Rate (RR)', 'Determinism (DET)', 'Average Diagonal Line Length (L)', 'Divergence (DIV)']
+    y_labels = ['RR', 'DET', 'L', 'DIV']
+
+    plt.figure(figsize=(10, 8))  # Adjust the figure size as needed
+    for i, (measure, title, label) in enumerate(zip(measures, titles, y_labels)):
+        ax = plt.subplot(4, 1, i + 1)
+        ax.plot(measure, marker='o', linestyle='-', color='b')
+        ax.set_title(title)
+        ax.set_xlabel('Recurrence Plot Index')
+        ax.set_ylabel(label)
+        ax.grid(True)
+
+    plt.tight_layout()
+    plt.show()
 
 def calcRP(timeseries, m, T, epsilon):
     l = timeseries.shape[0]
@@ -35,6 +49,7 @@ def calcRP(timeseries, m, T, epsilon):
 
     recurrence_matrix = (normalized_distance_matrix <= epsilon).astype(int)
     return recurrence_matrix
+
 def calcRQAMeasures(rp):
     n = rp.shape[0]
     rr = np.sum(rp) / (n * n)  # Recurrence Rate
@@ -52,39 +67,25 @@ def calcRQAMeasures(rp):
 
     return rr, det, l, div  # Recurrence Rate, Determinism, Average Diagonal Line Length, Divergence
 
-ts = getexampledata()
+timeseries = sd.composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8)
 
-m = 4 # embedding dimension
+m = 3 # embedding dimension
 T = 2 # delay
 epsilon = 0.1 # threshold
 
 l = 200  # Window size
-delay = 200  # Delay before calculating next RP
+delay = 5  # Delay before calculating next RP
 
 recurrence_plots = []
 rqa_measures = []
-for start in range(0, len(ts) - l + 1, delay):
-    window = ts[start:start + l]
+for start in range(0, len(timeseries) - l + 1, delay):
+    window = timeseries[start:start + l]
     rp = calcRP(window, m, T, epsilon)
     recurrence_plots.append(rp)
     rqa_metrics = calcRQAMeasures(rp)
     rqa_measures.append(rqa_metrics)
 
-print(rqa_measures[1])
-plt.imshow(recurrence_plots[1], cmap='binary', origin='lower')
-plt.title('Recurrence Plot')
-plt.xlabel('Time Steps')
-plt.ylabel('Time Steps')
+plt.plot(timeseries)
 plt.show()
 
-# Plotting all recurrence plots
-plt.figure(figsize=(12, len(recurrence_plots) * 2))  # Adjust figure size as needed
-for i, rp in enumerate(recurrence_plots):
-    ax = plt.subplot(len(recurrence_plots), 1, i + 1)
-    ax.imshow(rp, cmap='Greys', interpolation='none')
-    ax.set_title(f"Recurrence Plot {i+1} (Window starting at {i*delay})")
-    ax.axis('off')
-
-plt.tight_layout()
-plt.show()
-
+plot_rqa_measures(recurrence_plots, rqa_measures)
