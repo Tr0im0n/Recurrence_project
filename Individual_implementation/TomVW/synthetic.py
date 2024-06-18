@@ -58,7 +58,7 @@ def spikes(length: int = 100, spike_width: int = None, spike_height: float = Non
     return ans
 
 
-def composite_signal(length: int, sine_tuples=None, *, noise_amplitude: float = None,
+def composite_signal(length: int = 1000, sine_tuples=None, *, noise_amplitude: float = None,
                      spike_width: int = None, spike_height: float = None,
                      return_spike_locations: bool = False):
     """
@@ -83,9 +83,10 @@ def composite_signal(length: int, sine_tuples=None, *, noise_amplitude: float = 
     return sum(array_list), spike_locations
 
 
-test1 = composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8)
-plt.plot(test1)
-plt.show()
+if __name__ == "__main__":
+    test1 = composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8)
+    plt.plot(test1)
+    plt.show()
 
 
 
