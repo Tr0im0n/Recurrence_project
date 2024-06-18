@@ -77,14 +77,14 @@ plt.xlabel('Time Steps')
 plt.ylabel('Time Steps')
 plt.show()
 
-# # Plotting all recurrence plots
-# plt.figure(figsize=(12, len(recurrence_plots) * 2))  # Adjust figure size as needed
-# for i, rp in enumerate(recurrence_plots):
-#     ax = plt.subplot(len(recurrence_plots), 1, i + 1)
-#     ax.imshow(rp, cmap='Greys', interpolation='none')
-#     ax.set_title(f"Recurrence Plot {i+1} (Window starting at {i*delay})")
-#     ax.axis('off')
+# Plotting all recurrence plots
+plt.figure(figsize=(12, len(recurrence_plots) * 2))  # Adjust figure size as needed
+for i, rp in enumerate(recurrence_plots):
+    ax = plt.subplot(len(recurrence_plots), 1, i + 1)
+    ax.imshow(rp, cmap='Greys', interpolation='none')
+    ax.set_title(f"Recurrence Plot {i+1} (Window starting at {i*delay})")
+    ax.axis('off')
 
-# plt.tight_layout()
-# plt.show()
+plt.tight_layout()
+plt.show()
 

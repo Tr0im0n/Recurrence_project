@@ -5,6 +5,30 @@ from itertools import groupby
 import matplotlib.pyplot as plt
 import simdat as sd
 
+def plot_rqa_measures(recurrence_plots, rqa_measures):
+    # Extracting each RQA measure
+    rrs = [measure[0] for measure in rqa_measures]  # Recurrence Rates
+    dets = [measure[1] for measure in rqa_measures]  # Determinism
+    ls = [measure[2] for measure in rqa_measures]  # Average Diagonal Line Length
+    divs = [measure[3] for measure in rqa_measures]  # Divergence
+
+    # Create separate plots for each RQA measure
+    measures = [rrs, dets, ls, divs]
+    titles = ['Recurrence Rate (RR)', 'Determinism (DET)', 'Average Diagonal Line Length (L)', 'Divergence (DIV)']
+    y_labels = ['RR', 'DET', 'L', 'DIV']
+
+    plt.figure(figsize=(10, 8))  # Adjust the figure size as needed
+    for i, (measure, title, label) in enumerate(zip(measures, titles, y_labels)):
+        ax = plt.subplot(4, 1, i + 1)
+        ax.plot(measure, marker='o', linestyle='-', color='b')
+        ax.set_title(title)
+        ax.set_xlabel('Recurrence Plot Index')
+        ax.set_ylabel(label)
+        ax.grid(True)
+
+    plt.tight_layout()
+    plt.show()
+
 def calcRP(timeseries, m, T, epsilon):
     l = timeseries.shape[0]
     ones = np.ones_like(timeseries)
@@ -45,12 +69,12 @@ def calcRQAMeasures(rp):
 
 timeseries = sd.composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8)
 
-m = 4 # embedding dimension
+m = 3 # embedding dimension
 T = 2 # delay
 epsilon = 0.1 # threshold
 
 l = 200  # Window size
-delay = 200  # Delay before calculating next RP
+delay = 5  # Delay before calculating next RP
 
 recurrence_plots = []
 rqa_measures = []
@@ -61,8 +85,7 @@ for start in range(0, len(timeseries) - l + 1, delay):
     rqa_metrics = calcRQAMeasures(rp)
     rqa_measures.append(rqa_metrics)
 
-plt.imshow(recurrence_plots[1], cmap='binary', origin='lower')
-plt.title('Recurrence Plot')
-plt.xlabel('Time Steps')
-plt.ylabel('Time Steps')
+plt.plot(timeseries)
 plt.show()
+
+plot_rqa_measures(recurrence_plots, rqa_measures)

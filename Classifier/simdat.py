@@ -83,9 +83,9 @@ def composite_signal(length: int, sine_tuples=None, *, noise_amplitude: float = 
     return sum(array_list), spike_locations
 
 
-test1 = composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8)
-plt.plot(test1)
-plt.show()
+#test1 = composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8)
+# plt.plot(test1)
+# plt.show()
 
 
 
