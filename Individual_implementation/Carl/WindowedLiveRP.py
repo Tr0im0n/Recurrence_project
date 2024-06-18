@@ -56,10 +56,10 @@ ts = getexampledata()
 
 m = 4 # embedding dimension
 T = 2 # delay
-epsilon = 0.2 # threshold
+epsilon = 0.1 # threshold
 
 l = 200  # Window size
-delay = 50  # Delay before calculating next RP
+delay = 200  # Delay before calculating next RP
 
 recurrence_plots = []
 rqa_measures = []
@@ -76,8 +76,6 @@ plt.title('Recurrence Plot')
 plt.xlabel('Time Steps')
 plt.ylabel('Time Steps')
 plt.show()
-
-
 
 # # Plotting all recurrence plots
 # plt.figure(figsize=(12, len(recurrence_plots) * 2))  # Adjust figure size as needed
