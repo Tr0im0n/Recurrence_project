@@ -62,7 +62,7 @@ def train_and_evaluate_classifier(features, labels, test_size=0.2, random_state=
 
 # Main execution
 signals, labels = generate_synthetic_data()
-plt.plot(signals[0])
+plt.plot(signals[1])
 plt.title("Example Signal")
 plt.show()
 
