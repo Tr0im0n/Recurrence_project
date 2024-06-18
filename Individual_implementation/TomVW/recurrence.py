@@ -13,12 +13,15 @@ class TimeObject:
         self.last_time = time.time()
         self.time_list = []
 
-    def new(self):
+    def new(self, message: str = None):
         new_time = time.time()
         duration = new_time - self.last_time
-        print(f"Duration: {duration}")
+        print(f"{message} duration: {duration:.6f}")
         self.time_list.append(duration)
         self.last_time = new_time
+
+    def total(self):
+        print(f"Total duration: {sum(self.time_list):.6f}")
 
 
 def create_signal1():
@@ -68,28 +71,40 @@ def fast(signal: np.ndarray, n: int = 5):
     return squareform(pdist(whatsthis, metric='euclidean'))
 
 
-def test2(signal: np.ndarray, m: int = 5):
+def convolve_triangle_shift(signal: np.ndarray, m: int = 5):
     """
     Trying to implement my own recurrence plot.
     :param signal: np array of the signal
     :param m: The embedding dimension
     :return: The Recurrence plot, clipped?
     """
+    time_obj = TimeObject()
     my_length = signal.shape[0]
     signal = signal.reshape(my_length, 1)
+    time_obj.new("Reshaping signal")
     my_distances = pdist(signal, "euclidean")
-    my_zeros = np.zeros((my_length, my_length - 1))
-    rows, cols = np.triu_indices(my_length - 1, k=0)
+    time_obj.new("pdist")
+    my_zeros = np.zeros((my_length, my_length))
+    rows, cols = np.triu_indices(my_length, k=1)
     my_zeros[rows, cols] = my_distances
-    my_zeros = my_zeros.reshape((my_length - 1, my_length))
-    print(my_zeros.shape)
+    time_obj.new("Triangle filling")
+    flattened = my_zeros.flatten()
+    upper_left_triangle = flattened[:-1].reshape((my_length-1, my_length+1))
     kernel = np.ones((m, 1))
-    convolved = convolve2d(my_zeros, kernel)
-    print(convolved.shape)
-    plt.imshow(convolved, cmap="gray", origin="lower")
-    plt.show()
-    convolved = convolved.reshape((my_length - m + 1, my_length))
-    plt.imshow(convolved, cmap="gray", origin="lower")
+    time_obj.new("Reshape Triangle")
+    convolved = convolve2d(upper_left_triangle, kernel, "valid")
+    time_obj.new("Convolution")
+    flattened = convolved.flatten()
+    padded = np.zeros(my_length*my_length)
+    padded[:(my_length-m)*(my_length+1)] = flattened
+    half = padded.reshape((my_length, my_length))
+    time_obj.new("Reshape")
+    # plt.imshow(half, cmap="gray", origin="lower")
+    # plt.show()
+    ans = half + half.T
+    time_obj.new("Add 2 halves")
+    time_obj.total()
+    plt.imshow(ans, cmap="gray", origin="lower")
     plt.show()
 
 
@@ -124,6 +139,8 @@ def main():
     # my_recurrence_matrix = recurrence_matrix_slow(my_length_matrix)
     my_recurrence_matrix = fast(my_signal)
     time_obj.new()
+    time_obj.total()
+    return
     # my_epsilon = 80
     # my_r = (my_recurrence_matrix <= my_epsilon).astype(int)
     # time_obj.new()
@@ -156,7 +173,7 @@ def main():
 
 
 if __name__ == "__main__":
-    # main()
+    main()
     test2(create_signal1())
 
 
@@ -165,6 +182,12 @@ if __name__ == "__main__":
 plt.plot(xs, total_signal)
 plt.title("Sum of 3 sine-waves, with frequencies 1, 2 and 4")
 plt.show()
+
+10.000 points: 
+Setup duration: 5.040192
+Convolution duration: 5.585044
+Reshape duration: 2.404099
+Add 2 halves duration: 2.219247
 
 """
 
