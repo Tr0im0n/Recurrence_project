@@ -21,7 +21,7 @@ def plot_rqa_measures(recurrence_plots, rqa_measures):
     for index, name in enumerate(measure_names):
         measure_data = [measure[index] for measure in rqa_measures]
         ax = plt.subplot(len(measure_names), 1, index + 1)
-        ax.plot(measure_data, linestyle='-', color='b')
+        ax.plot(measure_data, marker="o", linestyle='-', color='b')
         ax.set_title(name)
         ax.set_xlabel('Recurrence Plot Index')
         ax.set_ylabel(name)
@@ -38,7 +38,7 @@ def calcRP(timeseries, m, T, epsilon):
     for i in range(l-m*T+1):
         H[i] = timeseries[i:i+m*T:T]
 
-    P = np.kron(ones, H) - np.kron(H, ones) 
+    P = np.kron(ones, H) - np.kron(H, ones)
     distance_matrix = squareform(pdist(P, 'euclidean'))
 
     # Normalize the distance matrix
@@ -51,64 +51,55 @@ def calcRP(timeseries, m, T, epsilon):
     recurrence_matrix = (normalized_distance_matrix <= epsilon).astype(int)
     return recurrence_matrix
 
-def calcRQAMeasures(rp, min_line_length=2):
-    n = rp.shape[0]
-    # Compute Recurrence Rate (RR)
-    RR = np.sum(rp) / (n * n)
+def calcRQAMeasures(recurrence_matrix, min_line_length=2):
+    time_series_length = recurrence_matrix.shape[0]
+    # Calculate recurrence rate (RR)
+    RR = np.sum(recurrence_matrix) / (time_series_length ** 2)
 
-    # Finding diagonals for Determinism and Average Diagonal Line Length
-    diagonals = []
-    for offset in range(-n + 1, n):
-        diagonal = np.diagonal(rp, offset=offset)
-        for k, g in groupby(diagonal):
-            if k == 1:
-                length = len(list(g))
-                if length >= min_line_length:
-                    diagonals.append(length)
-                    
-    if diagonals:
-        DET = sum(diagonals) / np.sum(rp)  # Determinism
-        L = np.mean(diagonals)             # Average Diagonal Line Length
-        DIV = 1 / max(diagonals)           # Divergence
-    else:
-        DET = 0
-        L = 0
-        DIV = 0
+    # Calculate diagonal line structures
+    diagonals = [np.diag(recurrence_matrix, k) for k in range(-time_series_length + 1, time_series_length)]
+    diag_lengths = [len(list(group)) for diag in diagonals for k, group in groupby(diag) if k == 1]
 
-    # Compute Laminarity and Trapping Time from vertical lines
-    verticals = []
-    for j in range(n):
-        column = rp[:, j]
-        for k, g in groupby(column):
-            if k == 1:
-                length = len(list(g))
-                if length >= min_line_length:
-                    verticals.append(length)
-    
-    if verticals:
-        TT = np.mean(verticals)  # Trapping Time
-        LAM = sum(verticals) / np.sum(rp)  # Laminarity
-    else:
-        TT = 0
-        LAM = 0
+    # Calculate DET
+    DET = sum(l for l in diag_lengths if l >= min_line_length) / np.sum(recurrence_matrix) if np.sum(recurrence_matrix) != 0 else 0
 
-    # Calculate Entropy of diagonal line lengths
-    if diagonals:
-        line_length_counts = np.bincount(diagonals)
-        p = line_length_counts[line_length_counts.nonzero()] / sum(line_length_counts)
-        ENT = -np.sum(p * np.log(p))
-    else:
-        ENT = 0
+    # Calculate L
+    L = np.mean([l for l in diag_lengths if l >= min_line_length]) if diag_lengths else 0
 
-    # Calculate Trend
-    trend_lines = [np.sum(np.diagonal(rp, offset=i)) for i in range(-n + 1, n)]
-    trend_slope, _ = np.polyfit(range(len(trend_lines)), trend_lines, 1)
-    TREND = trend_slope
+    # Calculate Lmax
+    Lmax = max(diag_lengths) if diag_lengths else 0
+
+    # Calculate DIV
+    DIV = 1 / Lmax if Lmax != 0 else 0
+
+    # Calculate ENTR
+    counts = np.bincount(diag_lengths)
+    probs = counts / np.sum(counts) if np.sum(counts) > 0 else np.array([0])
+    ENTR = -np.sum(probs * np.log(probs)) if np.sum(counts) > 0 else 0
+
+    # Calculate trend (TREND)
+    TREND = np.mean([np.mean(recurrence_matrix[i, i:]) for i in range(len(recurrence_matrix))])
+
+    # Calculate laminarity (LAM)
+    verticals = [recurrence_matrix[:, i] for i in range(time_series_length)]
+    vert_lengths = [len(list(group)) for vert in verticals for k, group in groupby(vert) if k == 1]
+    LAM = sum(l for l in vert_lengths if l >= min_line_length) / np.sum(recurrence_matrix) if np.sum(recurrence_matrix) != 0 else 0
+
+    # Calculate trapping time (TT)
+    TT = np.mean([l for l in vert_lengths if l >= min_line_length]) if vert_lengths else 0
+
+    # Calculate maximum length of vertical structures (Vmax)
+    Vmax = max(vert_lengths) if vert_lengths else 0
+
+    # Calculate entropy of vertical structures (VENTR)
+    vert_counts = np.bincount(vert_lengths)
+    vert_probs = vert_counts / np.sum(vert_counts) if np.sum(vert_counts) > 0 else np.array([0])
+    VENTR = -np.sum(vert_probs * np.log(vert_probs)) if np.sum(vert_counts) > 0 else 0
 
     # Ratio between DET and RR
     DET_RR = DET / RR if RR > 0 else 0
 
-    return RR, DET, LAM, DET_RR, L, TT, DIV, ENT, TREND
+    return RR, DET, LAM, DET_RR, L, TT, DIV, ENTR, TREND
 
 timeseries = sd.composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8)
 
