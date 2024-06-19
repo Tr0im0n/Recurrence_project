@@ -74,8 +74,9 @@ def calcRQAMeasures(recurrence_matrix, min_line_length=2):
 
     # Calculate ENTR
     counts = np.bincount(diag_lengths)
-    probs = counts / np.sum(counts) if np.sum(counts) > 0 else np.array([0])
-    ENTR = -np.sum(probs * np.log(probs)) if np.sum(counts) > 0 else 0
+    counts_nonzero = counts[counts > 0]  # Remove zero counts
+    probs = counts_nonzero / np.sum(counts_nonzero) if np.sum(counts_nonzero) > 0 else np.array([0])
+    ENTR = -np.sum(probs * np.log(probs)) if np.sum(counts_nonzero) > 0 else 0
 
     # Calculate trend (TREND)
     TREND = np.mean([np.mean(recurrence_matrix[i, i:]) for i in range(len(recurrence_matrix))])
@@ -93,14 +94,20 @@ def calcRQAMeasures(recurrence_matrix, min_line_length=2):
 
     # Calculate entropy of vertical structures (VENTR)
     vert_counts = np.bincount(vert_lengths)
-    vert_probs = vert_counts / np.sum(vert_counts) if np.sum(vert_counts) > 0 else np.array([0])
-    VENTR = -np.sum(vert_probs * np.log(vert_probs)) if np.sum(vert_counts) > 0 else 0
+    vert_counts_nonzero = vert_counts[vert_counts > 0]  # Remove zero counts
+    vert_probs = vert_counts_nonzero / np.sum(vert_counts_nonzero) if np.sum(vert_counts_nonzero) > 0 else np.array([0])
+    VENTR = -np.sum(vert_probs * np.log(vert_probs)) if np.sum(vert_counts_nonzero) > 0 else 0
 
     # Ratio between DET and RR
     DET_RR = DET / RR if RR > 0 else 0
 
     return RR, DET, LAM, DET_RR, L, TT, DIV, ENTR, TREND
 
+# Example usage
+timeseries = sd.composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8)
+recurrence_matrix = calcRP(timeseries, m=3, T=2, epsilon=0.1)
+rqa_measures = calcRQAMeasures(recurrence_matrix)
+print(rqa_measures)
 def detect_changes(rqa_measures, threshold=0.2, window_size=5):
     detected_points = {
         'RR': [],
