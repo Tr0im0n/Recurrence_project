@@ -30,7 +30,7 @@ def sine(frequency: float, amplitude: float, xs: np.ndarray):
 
 
 def spikes(length: int = 100, spike_width: int = None, spike_height: float = None,
-           probability_at_end: float = None, return_spike_locations: bool = False):
+           probability_at_end: float = None, return_spike_locations: bool = True):
     """
     First determines locations where to create spikes, then makes spikes at those locations.
     :param length:

@@ -5,14 +5,20 @@ from itertools import groupby
 import matplotlib.pyplot as plt
 import simdat as sd
 
-# --------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------------------
 # TO-DO:
 # 1. verify correctness of rqa measures
 # 2. Check each RQA-M reaction to spike type event
 # 3. implement decision tree like classifier (If RR > 0.5 then 1 else 0 etc.)
 # 4. Try different event types
-# 5. Set up WOA-SVM training and testing
-# --------------------------------------------------------
+# 5. label recurrence plots as faulty/healthy based on the array containing the spike coordinates.
+# ------------------------ CLASSIFIER LAYOUT ----------------------------------------------------------------------------------------
+# 1. Anomaly Detection
+#   - Single rbf-kernel SVM (healthy vs faulty)
+# 2. Anomaly Classification
+#   - multiple linear-kernel SVMs (comparing each anomaly class to each other one by one)
+#   - each SVM classifier votes on one anomaly class => majority anomaly class is chosen
+# -----------------------------------------------------------------------------------------------------------------------------------	
 
 def plot_rqa_measures(recurrence_plots, rqa_measures):
     # Create separate plots for each RQA measure
@@ -75,7 +81,7 @@ def calcRQAMeasures(recurrence_matrix, min_line_length=2):
     # Calculate ENTR
     counts = np.bincount(diag_lengths)
     probs = counts / np.sum(counts) if np.sum(counts) > 0 else np.array([0])
-    ENTR = -np.sum(probs * np.log(probs)) if np.sum(counts) > 0 else 0
+    # ENTR = -np.sum(probs * np.log(probs)) if np.sum(counts) > 0 else 0
 
     # Calculate trend (TREND)
     TREND = np.mean([np.mean(recurrence_matrix[i, i:]) for i in range(len(recurrence_matrix))])
@@ -94,12 +100,12 @@ def calcRQAMeasures(recurrence_matrix, min_line_length=2):
     # Calculate entropy of vertical structures (VENTR)
     vert_counts = np.bincount(vert_lengths)
     vert_probs = vert_counts / np.sum(vert_counts) if np.sum(vert_counts) > 0 else np.array([0])
-    VENTR = -np.sum(vert_probs * np.log(vert_probs)) if np.sum(vert_counts) > 0 else 0
+    # VENTR = -np.sum(vert_probs * np.log(vert_probs)) if np.sum(vert_counts) > 0 else 0
 
     # Ratio between DET and RR
     DET_RR = DET / RR if RR > 0 else 0
 
-    return RR, DET, LAM, DET_RR, L, TT, DIV, ENTR, TREND
+    return RR, DET, LAM, DET_RR, L, TT, DIV, TREND
 
 def detect_changes(rqa_measures, threshold=0.2, window_size=5):
     detected_points = {
@@ -115,7 +121,7 @@ def detect_changes(rqa_measures, threshold=0.2, window_size=5):
                 detected_points[name].append(i)  # Record the index of the RQA measure change
     return detected_points
 
-timeseries = sd.composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8)
+timeseries, spike_locations = sd.composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8, return_spike_locations=True)
 
 m = 3 # embedding dimension
 T = 2 # delay
@@ -126,6 +132,7 @@ delay = 5  # Delay before calculating next RP
 
 recurrence_plots = []
 rqa_measures = []
+
 for start in range(0, len(timeseries) - l + 1, delay):
     window = timeseries[start:start + l]
     rp = calcRP(window, m, T, epsilon)
@@ -133,13 +140,19 @@ for start in range(0, len(timeseries) - l + 1, delay):
     rqa_metrics = calcRQAMeasures(rp)
     rqa_measures.append(rqa_metrics)
 
+labels = np.zeros(int((len(timeseries)-l)/delay))
+
+for i in range(len(labels)):
+    labels[int(spike_locations[i]/delay)] = 1
+
+print(labels)
+
 plt.plot(timeseries)
 plt.show()
-
-plot_rqa_measures(recurrence_plots, rqa_measures)
+# plot_rqa_measures(recurrence_plots, rqa_measures)
 
 # Detect changes in RR, DET, LAM
-detected_points = detect_changes(rqa_measures)
-print("Detected points for RR:", detected_points['RR'])
-print("Detected points for DET:", detected_points['DET'])
-print("Detected points for LAM:", detected_points['LAM'])
+# detected_points = detect_changes(rqa_measures)
+# print("Detected points for RR:", detected_points['RR'])
+# print("Detected points for DET:", detected_points['DET'])
+# print("Detected points for LAM:", detected_points['LAM'])
