@@ -18,6 +18,9 @@ class funcTab:
         self.root = root
         self.notebook = notebook
 
+        self.style = ttk.Style()
+        self.style.configure('TFrame', backgorund='pink')
+
         # create function tab
         self.function_tab = ttk.Frame(notebook)
         notebook.add(self.function_tab, text='Plotting Functions')
@@ -31,7 +34,7 @@ class funcTab:
     def create_functions_tab(self):
         # set up layout
         self.command_window_func = ttk.Frame(self.function_tab)
-        self.command_window_func.place(x=0, y=0, relwidth=0.7, relheight=0.5)
+        self.command_window_func.place(x=0, y=0, relwidth=0.55, relheight=0.5)
 
         # set up figures
         self.fig_ps_func = plt.Figure()
@@ -39,7 +42,7 @@ class funcTab:
         self.fig_rp_func = plt.Figure()
 
         self.canvas_ps_func = FigureCanvasTkAgg(self.fig_ps_func, master=self.function_tab)
-        self.canvas_ps_func.get_tk_widget().place(relx=0.7, y=0, relwidth=0.3, relheight=0.5)
+        self.canvas_ps_func.get_tk_widget().place(relx=0.7, rely=0, relwidth=0.3, relheight=0.5)
 
         self.canvas_comp_func = FigureCanvasTkAgg(self.fig_comp_func, master=self.function_tab)
         self.canvas_comp_func.get_tk_widget().place(relx=0, rely=0.5, relwidth=0.5, relheight=0.5)
@@ -65,12 +68,24 @@ class funcTab:
 
         self.init_cond_frame.columnconfigure(0, weight=1)
         self.init_cond_frame.columnconfigure(1, weight=1)
-        self.init_cond_frame.columnconfigure(2, weight=1)
-        self.init_cond_frame.columnconfigure(3, weight=1)
+        # self.init_cond_frame.columnconfigure(2, weight=1)
+        # self.init_cond_frame.columnconfigure(3, weight=1)
         self.init_cond_frame.rowconfigure(0, weight=1)
         self.init_cond_frame.rowconfigure(1, weight=1)
         self.init_cond_frame.rowconfigure(2, weight=1)
         self.init_cond_frame.rowconfigure(3, weight=1)
+
+        self.embedding_parameter_frame = tk.Frame(self.user_input_frame)
+        self.embedding_parameter_frame.pack()
+
+        self.embedding_parameter_frame.columnconfigure(0, weight=1)
+        self.embedding_parameter_frame.columnconfigure(1, weight=1)
+        # self.init_cond_frame.columnconfigure(2, weight=1)
+        # self.init_cond_frame.columnconfigure(3, weight=1)
+        self.embedding_parameter_frame.rowconfigure(0, weight=1)
+        self.embedding_parameter_frame.rowconfigure(1, weight=1)
+        self.embedding_parameter_frame.rowconfigure(2, weight=1)
+        self.embedding_parameter_frame.rowconfigure(3, weight=1)
 
         # configure command window
         # general controls
@@ -121,29 +136,35 @@ class funcTab:
         self.init_cond_z_input.grid(row=3, column=1)
 
         # Inputs for embedding parameters
-        self.rec_param_label = tk.Label(self.init_cond_frame, text='Embedding Parameters:')
-        self.rec_param_label.grid(row=0, column=2, columnspan=2)
-        self.embedding_dim_label_func = tk.Label(self.init_cond_frame, text='m:')
-        self.embedding_dim_label_func.grid(row=1, column=2)
-        self.time_delay_label_func = tk.Label(self.init_cond_frame, text='T:')
-        self.time_delay_label_func.grid(row=2, column=2)
-        self.threshold_label_func = tk.Label(self.init_cond_frame, text='E:')
-        self.threshold_label_func.grid(row=3, column=2)
+        self.rec_param_label = tk.Label(self.embedding_parameter_frame, text='Embedding Parameters:')
+        self.rec_param_label.grid(row=0, column=0, columnspan=2)
+        self.embedding_dim_label_func = tk.Label(self.embedding_parameter_frame, text='m:')
+        self.embedding_dim_label_func.grid(row=1, column=0)
+        self.time_delay_label_func = tk.Label(self.embedding_parameter_frame, text='T:')
+        self.time_delay_label_func.grid(row=2, column=0)
+        self.threshold_label_func = tk.Label(self.embedding_parameter_frame, text='E:')
+        self.threshold_label_func.grid(row=3, column=0)
 
         self.embedding_dim_var_func = tk.IntVar(value=1)
         self.time_delay_var_func = tk.IntVar(value=1)
         self.threshold_var_func = tk.DoubleVar(value=0.1)
+        self.threshold_check_var = tk.BooleanVar(value=True)
 
-        self.embedding_dim_input_func = tk.Entry(self.init_cond_frame, textvariable=self.embedding_dim_var_func)
-        self.embedding_dim_input_func.grid(row=1, column=3)
+        self.embedding_dim_input_func = tk.Entry(self.embedding_parameter_frame, textvariable=self.embedding_dim_var_func)
+        self.embedding_dim_input_func.grid(row=1, column=1)
 
-        self.time_delay_input_func = tk.Entry(self.init_cond_frame, textvariable=self.time_delay_var_func)
-        self.time_delay_input_func.grid(row=2, column=3)
+        self.time_delay_input_func = tk.Entry(self.embedding_parameter_frame, textvariable=self.time_delay_var_func)
+        self.time_delay_input_func.grid(row=2, column=1)
 
+        self.threshold_frame = ttk.Frame(self.embedding_parameter_frame)
+        self.threshold_frame.grid(row=3, column=1)
         vcmd = (self.init_cond_frame.register(self.validate_threshold), '%P')
-        self.threshold_input_func = ttk.Entry(self.init_cond_frame, textvariable=self.threshold_var_func,
+        self.threshold_input_func = ttk.Entry(self.threshold_frame, textvariable=self.threshold_var_func,
                                               validate='focusout', validatecommand=vcmd)
-        self.threshold_input_func.grid(row=3, column=3)
+        self.threshold_input_func.pack(side='left')
+
+        self.threshold_check_button = ttk.Checkbutton(self.threshold_frame, text='threshold', variable=self.threshold_check_var)
+        self.threshold_check_button.pack(side='left', padx=20)
 
         # Animation speed Control
         self.slider_frame = ttk.Frame(self.user_input_frame)
@@ -251,6 +272,9 @@ class funcTab:
             self.show_error('please select at least one coordinate to create the recurrence plot')
 
         elif sum(self.coord_active) == 1:  # univariate recurrence plot
+            # reactivate ability to unthreshold
+            self.threshold_check_button.configure(state='normal')
+
             # extract activated time series
             true_index = self.coord_active.index(True)
             self.x = [coord[true_index] for coord in self.xyzs]  # introduce functionality to select which time series
@@ -269,6 +293,10 @@ class funcTab:
             self.update_recurrence_plot_figure(recurrence_matrix, 'Recurrence')
 
         elif sum(self.coord_active) > 1:  # multivariate joint recurrence plot
+            # deactive ability to unthreshold
+            self.threshold_check_var.set(True)
+            self.threshold_check_button.configure(state='disabled')
+
             # actualize joint recurrence plot array
             jrp = np.zeros_like(self.xyzs[:,0])
 
@@ -322,7 +350,10 @@ class funcTab:
             self.D_norm = self.D / D_max
 
             # create recurrence matrix
-            recurrence_matrix = self.D_norm < self.epsilon
+            if self.threshold_check_var.get():
+                recurrence_matrix = self.D_norm < self.epsilon
+            else:
+                recurrence_matrix = self.D_norm
             return recurrence_matrix
 
     def update_recurrence_plot_figure(self, recurrence_matrix, type):
@@ -330,12 +361,11 @@ class funcTab:
         self.fig_rp_func.clear()
         ax_rp_func = self.fig_rp_func.add_subplot(111)
 
-        # extract x and y coordinates of recurrence for plotting
-        x_rec, y_rec = np.argwhere(recurrence_matrix).T
-
         # plot recurrence matrix
-        ax_rp_func.scatter(x_rec, y_rec, s=1)
-        ax_rp_func.set_title(f"{type} Plot (embedding dim: {self.m}; time delay: {self.T})")
+        # ax_rp_func.scatter(x_rec, y_rec, s=1)
+        im = ax_rp_func.imshow(recurrence_matrix, cmap='binary', origin='lower')
+        # self.fig_rp_func.colorbar(im, ax=ax_rp_func)
+        ax_rp_func.set_title(f"{type} Plot (embedding dim: {self.m}; time delay: {self.T}) {self.threshold_check_var.get()}")
         ax_rp_func.set_xlabel("Vector Index")
         ax_rp_func.set_ylabel("Vector Index")
 
