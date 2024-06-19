@@ -21,13 +21,17 @@ class TimeObject:
         print(f"{message} duration: {duration:.6f}")
         self.time_list.append(duration)
         self.last_time = new_time
+        return duration
 
     def total(self):
         print(f"Total duration: {sum(self.time_list):.6f}")
 
 
 def get_length_matrix(signal: np.ndarray):
-    """ Just used in following function """
+    """
+    Just used in following function
+    Just replace with squareform(pdist(...))
+    """
     length = signal.shape[0]
     ans = np.zeros((length, length))
     for i in range(length):
@@ -37,7 +41,7 @@ def get_length_matrix(signal: np.ndarray):
     return ans
 
 
-def rp_double_for_loop(signal: np.ndarray, m: int = 5):
+def double_for_loop_length_matrix(signal: np.ndarray, m: int = 5):
     """ Double for loop implementation """
     length = signal.shape[0]
     signal = signal.reshape(length, 1)
@@ -49,6 +53,19 @@ def rp_double_for_loop(signal: np.ndarray, m: int = 5):
             my_len = sum([length_matrix[i+k, j+k] for k in range(m)])
             # clip = 0 if my_len < 0.1 else 1
             ans[i, j] = my_len  # clip
+    return ans
+
+
+def double_for_loop_hankel(signal: np.ndarray, m: int = 5):
+    """ Double for loop implementation """
+    old_length = signal.shape[0]
+    new_length = old_length - m + 1
+    my_hankel = scipy.linalg.hankel(signal[:new_length], signal[new_length-1:])
+    ans = np.zeros((new_length, new_length))
+
+    for i in range(new_length):
+        for j in range(new_length):
+            ans[i, j] = np.linalg.norm(my_hankel[i] - my_hankel[j])
     return ans
 
 
@@ -145,17 +162,34 @@ def convolve_diagonal(signal: np.ndarray, m: int = 5):
     """
     my_length = signal.shape[0]
     signal = signal.reshape((my_length, 1))
-    time_obj = TimeObject()
-    distances = pdist(signal, metric='euclidean')   # [:, np.newaxis]
-    time_obj.new("pdist")
-    distance_matrix = squareform(distances)
-    time_obj.new("squareform")
-    # distance_matrix = squareform(pdist(signal, "euclidean"))
+    distance_matrix = squareform(pdist(signal, "euclidean"))
     kernel = np.eye(m, dtype=int)
-    convolved = convolve2d(distance_matrix, kernel)
-    time_obj.new("convolve")
-    time_obj.total()
-    return convolved
+    return convolve2d(distance_matrix, kernel)
+
+
+def martina(signal, m: int = 5, t: int = 1):
+    num_vectors = len(signal) - (m - 1) * t
+    vectors = np.array([signal[i:i + m*t:t] for i in range(num_vectors)])
+    return squareform(pdist(vectors, metric='euclidean'))
+
+
+def carl(signal, m: int = 5, t: int = 1, epsilon: float = 0.1):
+    old_length = signal.shape[0]
+    new_length = old_length - m*t + 1
+    ones = np.ones((new_length, 1))
+
+    hankel_like = np.zeros((new_length, m))    # Trajectory Matrix
+    for i in range(new_length):
+        hankel_like[i] = signal[i:i+m*t:t]
+        
+    whatsthis = np.kron(ones, hankel_like) - np.kron(hankel_like, ones)
+    row_norms = np.linalg.norm(whatsthis, axis=1)
+    return row_norms.reshape(new_length, new_length)
+
+    # return squareform(pdist(P, 'euclidean'))    # distance_matrix =
+
+    # recurrence_matrix = (distance_matrix <= epsilon).astype(int)
+    # return recurrence_matrix
 
 
 def epsilon_slider():
@@ -203,24 +237,34 @@ def epsilon_slider():
     plt.show()
 
 
-def compare4():
-    my_signal = composite_signal(1_000, ((0.01, 4), (0.02, 2), (0.04, 1)))    # ((1, 4), (2, 2), (4, 1))
-    funcs = [hankel_pdist, convolve_diagonal]     # , hankel_kron_norm, rp_double_for_loop, convolve_triangle_shift
-    # rps = [func(my_signal) for func in funcs]
+def compare_all(n_samples: int = 1_000):
+    my_signal = composite_signal(n_samples, ((0.01, 4), (0.02, 2), (0.04, 1)))    # ((1, 4), (2, 2), (4, 1))
+    funcs = [hankel_pdist,
+             martina,
+             # hankel_kron_norm,
+             # double_for_loop_hankel,
+             # double_for_loop_length_matrix,
+             convolve_triangle_shift,
+             convolve_diagonal,
+             carl]
     rps = []
     time_obj = TimeObject()
     for func in funcs:
         rps.append(func(my_signal))
         time_obj.new("")
 
-    fig1, axs = plt.subplots(1, 2)
-    for ax, rp in zip(axs.flat, rps):
+    durations = time_obj.time_list
+
+    fig, axs = plt.subplots(2, 3)
+    fig.suptitle(f"Samples: {n_samples}")
+    for ax, rp, duration, func in zip(axs.flat, rps, durations, funcs):
         ax.imshow(rp, cmap="gray", origin="lower")
+        ax.set_title(f"{func.__name__}:\n{duration:.6f}")
     plt.show()
 
 
 if __name__ == "__main__":
-    compare4()
+    compare_all()
 
 
 """
