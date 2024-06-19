@@ -21,7 +21,7 @@ def plot_rqa_measures(recurrence_plots, rqa_measures):
     for index, name in enumerate(measure_names):
         measure_data = [measure[index] for measure in rqa_measures]
         ax = plt.subplot(len(measure_names), 1, index + 1)
-        ax.plot(measure_data, marker="o", linestyle='-', color='b')
+        ax.plot(measure_data, linestyle='-', color='b')
         ax.set_title(name)
         ax.set_xlabel('Recurrence Plot Index')
         ax.set_ylabel(name)
@@ -101,6 +101,20 @@ def calcRQAMeasures(recurrence_matrix, min_line_length=2):
 
     return RR, DET, LAM, DET_RR, L, TT, DIV, ENTR, TREND
 
+def detect_changes(rqa_measures, threshold=0.2, window_size=5):
+    detected_points = {
+        'RR': [],
+        'DET': [],
+        'LAM': []
+    }
+    for i in range(window_size, len(rqa_measures)):
+        for measure, name in zip([0, 1, 2], ['RR', 'DET', 'LAM']):
+            current_value = rqa_measures[i][measure]
+            avg_past_values = np.mean([rqa_measures[j][measure] for j in range(i - window_size, i)])
+            if abs(current_value - avg_past_values) > threshold * avg_past_values:
+                detected_points[name].append(i)  # Record the index of the RQA measure change
+    return detected_points
+
 timeseries = sd.composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8)
 
 m = 3 # embedding dimension
@@ -123,3 +137,9 @@ plt.plot(timeseries)
 plt.show()
 
 plot_rqa_measures(recurrence_plots, rqa_measures)
+
+# Detect changes in RR, DET, LAM
+detected_points = detect_changes(rqa_measures)
+print("Detected points for RR:", detected_points['RR'])
+print("Detected points for DET:", detected_points['DET'])
+print("Detected points for LAM:", detected_points['LAM'])
