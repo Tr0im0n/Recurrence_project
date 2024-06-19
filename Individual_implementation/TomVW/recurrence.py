@@ -1,4 +1,3 @@
-import time
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,23 +7,7 @@ from scipy.spatial.distance import pdist, squareform
 from scipy.signal import convolve2d
 
 from Individual_implementation.TomVW.synthetic import composite_signal
-
-
-class TimeObject:
-    def __init__(self):
-        self.last_time = time.time()
-        self.time_list = []
-
-    def new(self, message: str = None):
-        new_time = time.time()
-        duration = new_time - self.last_time
-        print(f"{message} duration: {duration:.6f}")
-        self.time_list.append(duration)
-        self.last_time = new_time
-        return duration
-
-    def total(self):
-        print(f"Total duration: {sum(self.time_list):.6f}")
+from Individual_implementation.TomVW.timeObject import TimeObject
 
 
 def get_length_matrix(signal: np.ndarray):
@@ -181,7 +164,7 @@ def carl(signal, m: int = 5, t: int = 1, epsilon: float = 0.1):
     hankel_like = np.zeros((new_length, m))    # Trajectory Matrix
     for i in range(new_length):
         hankel_like[i] = signal[i:i+m*t:t]
-        
+
     whatsthis = np.kron(ones, hankel_like) - np.kron(hankel_like, ones)
     row_norms = np.linalg.norm(whatsthis, axis=1)
     return row_norms.reshape(new_length, new_length)
