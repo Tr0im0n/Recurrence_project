@@ -16,7 +16,7 @@ def lorenz(t, Y, sigma, rho, beta):
     x, y, z = Y
     return [sigma * (y - x), x * (rho - z) - y, x * y - beta * z]
 
-def RecurrencePlot(timeseries, m, T, epsilon):
+def RecurrencePlot(timeseries, m, T, epsilon): # RUBBISH
     l = timeseries.shape[0]
     ones = np.ones_like(timeseries)
 
@@ -25,7 +25,7 @@ def RecurrencePlot(timeseries, m, T, epsilon):
         H[i] = timeseries[i:i+m*T:T]
 
     P = np.kron(ones, H) - np.kron(H, ones) 
-    distance_matrix = squareform(pdist(P, 'euclidean'))
+    distance_matrix = np.linalg.norm(P, axis=1)
 
     recurrence_matrix = (distance_matrix <= epsilon).astype(int)
     return recurrence_matrix

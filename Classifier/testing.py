@@ -7,11 +7,11 @@ import simdat as sd
 
 # -----------------------------------------------------------------------------------------------------------------------------------
 # TO-DO:
-# 1. verify correctness of rqa measures
-# 2. Check each RQA-M reaction to spike type event
+# 1. verify correctness of rqa measures (Fix ENTR)
 # 3. implement decision tree like classifier (If RR > 0.5 then 1 else 0 etc.)
-# 4. Try different event types
-# 5. label recurrence plots as faulty/healthy based on the array containing the spike coordinates.
+# 4. Try different event types (look for literature)
+# 5. Try bearing dataset
+# 6. label recurrence plots as faulty/healthy based on the array containing the spike coordinates.
 # ------------------------ CLASSIFIER LAYOUT ----------------------------------------------------------------------------------------
 # 1. Anomaly Detection
 #   - Single rbf-kernel SVM (healthy vs faulty)
@@ -140,10 +140,11 @@ for start in range(0, len(timeseries) - l + 1, delay):
     rqa_metrics = calcRQAMeasures(rp)
     rqa_measures.append(rqa_metrics)
 
+# labeling the recurrence plots
 labels = np.zeros(int((len(timeseries)-l)/delay))
-
-for i in range(len(labels)):
-    labels[int(spike_locations[i]/delay)] = 1
+for i in range(0, len(recurrence_plots)-1):
+    if any(spike_locations[i*5:i*5+200]):
+        labels[i] = 1
 
 print(labels)
 
