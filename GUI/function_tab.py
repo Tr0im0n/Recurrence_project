@@ -6,7 +6,6 @@ from scipy.spatial.distance import pdist, squareform
 import importlib.util
 import matplotlib.pyplot as plt
 import numpy as np
-import threading
 
 from attractor_functions import *
 from rqa_functions import *
@@ -18,8 +17,8 @@ class funcTab:
         self.root = root
         self.notebook = notebook
 
-        self.style = ttk.Style()
-        self.style.configure('TFrame', backgorund='pink')
+        # self.style = ttk.Style()
+        # self.style.configure('TFrame', backgorund='pink')
 
         # create function tab
         self.function_tab = ttk.Frame(notebook)
@@ -31,155 +30,117 @@ class funcTab:
         self.dt = 0.01
         self.xyzs = np.array([])
 
-    def create_functions_tab(self):
-        # set up layout
-        self.command_window_func = ttk.Frame(self.function_tab)
-        self.command_window_func.place(x=0, y=0, relwidth=0.55, relheight=0.5)
+    def embedding_param_layout(self):
+        self.embedding_param_frame = ttk.Frame(self.command_window_frame_top)
+        self.embedding_param_frame.pack(side='left', padx=(0,10), anchor='n')
 
-        # set up figures
-        self.fig_ps_func = plt.Figure()
-        self.fig_comp_func = plt.Figure()
-        self.fig_rp_func = plt.Figure()
+        self.embedding_param_frame.columnconfigure(0,weight=1)
+        self.embedding_param_frame.columnconfigure(1, weight=3)
+        self.embedding_param_frame.columnconfigure(2, weight=1)
 
-        self.canvas_ps_func = FigureCanvasTkAgg(self.fig_ps_func, master=self.function_tab)
-        self.canvas_ps_func.get_tk_widget().place(relx=0.7, rely=0, relwidth=0.3, relheight=0.5)
+        # Inputs for embedding parameters
+        self.embedding_param_label = ttk.Label(self.embedding_param_frame, text='Embedding Parameters')
+        self.embedding_param_label.grid(row=0, column=0, columnspan=3)
+        self.embedding_dim_label = ttk.Label(self.embedding_param_frame, text='m:')
+        self.embedding_dim_label.grid(row=1, column=0, padx=(10, 0), pady=(0, 10))
+        self.time_delay_label = ttk.Label(self.embedding_param_frame, text='T:')
+        self.time_delay_label.grid(row=2, column=0, padx=(10, 0))
+        self.threshold_label = ttk.Label(self.embedding_param_frame, text='E:')
+        self.threshold_label.grid(row=3, column=0, padx=(10, 0), pady=10)
 
-        self.canvas_comp_func = FigureCanvasTkAgg(self.fig_comp_func, master=self.function_tab)
-        self.canvas_comp_func.get_tk_widget().place(relx=0, rely=0.5, relwidth=0.5, relheight=0.5)
+        self.embedding_dim_var = tk.IntVar(value=1)
+        self.time_delay_var = tk.IntVar(value=1)
+        self.threshold_var = tk.DoubleVar(value=0.1)
+        self.threshold_check_var = tk.BooleanVar(value=True)
 
-        self.canvas_rp_func = FigureCanvasTkAgg(self.fig_rp_func, master=self.function_tab)
-        self.canvas_rp_func.get_tk_widget().place(relx=0.5, rely=0.5, relwidth=0.5, relheight=0.5)
+        self.embedding_dim_input = ttk.Entry(self.embedding_param_frame, textvariable=self.embedding_dim_var, width=5)
+        self.embedding_dim_input.grid(row=1, column=1, columnspan=2, sticky='ew', padx=10, pady=(0, 10))
 
-        # set up command window
-        self.command_window_func.columnconfigure(0, weight=1)
-        self.command_window_func.columnconfigure(1, weight=2)
-        self.command_window_func.columnconfigure(2, weight=1)
-        # self.command_window_func.rowconfigure(0, weight=1)
-        # self.command_window_func.rowconfigure(1, weight=1)
+        self.time_delay_input = ttk.Entry(self.embedding_param_frame, textvariable=self.time_delay_var, width=5)
+        self.time_delay_input.grid(row=2, column=1, columnspan=2, sticky='ew', padx=10)
 
-        self.general_controls_frame = ttk.Frame(self.command_window_func)
-        self.general_controls_frame.grid(row=0, column=0)
+        vcmd = (self.embedding_param_frame.register(self.validate_threshold), '%P')
+        self.threshold_input = ttk.Entry(self.embedding_param_frame, textvariable=self.threshold_var, width=5,
+                                         validate='focusout', validatecommand=vcmd)
+        self.threshold_input.grid(row=3, column=1, sticky='w', padx=(10, 0), pady=10)
 
-        self.user_input_frame = ttk.Frame(self.command_window_func)
-        self.user_input_frame.grid(row=0, column=1)
+        self.threshold_check_button = ttk.Checkbutton(self.embedding_param_frame, text='threshold', variable=self.threshold_check_var)
+        self.threshold_check_button.grid(row=3,column=2, sticky='e', padx=(5,10), pady=10)
 
-        self.init_cond_frame = tk.Frame(self.user_input_frame)
-        self.init_cond_frame.pack()
+    def init_cond_layout(self):
+        self.init_cond_frame = ttk.Frame(self.command_window_frame_top)
+        self.init_cond_frame.pack(side='left', padx=(0,10), anchor='n')
 
         self.init_cond_frame.columnconfigure(0, weight=1)
-        self.init_cond_frame.columnconfigure(1, weight=1)
-        # self.init_cond_frame.columnconfigure(2, weight=1)
-        # self.init_cond_frame.columnconfigure(3, weight=1)
-        self.init_cond_frame.rowconfigure(0, weight=1)
-        self.init_cond_frame.rowconfigure(1, weight=1)
-        self.init_cond_frame.rowconfigure(2, weight=1)
-        self.init_cond_frame.rowconfigure(3, weight=1)
-
-        self.embedding_parameter_frame = tk.Frame(self.user_input_frame)
-        self.embedding_parameter_frame.pack()
-
-        self.embedding_parameter_frame.columnconfigure(0, weight=1)
-        self.embedding_parameter_frame.columnconfigure(1, weight=1)
-        # self.init_cond_frame.columnconfigure(2, weight=1)
-        # self.init_cond_frame.columnconfigure(3, weight=1)
-        self.embedding_parameter_frame.rowconfigure(0, weight=1)
-        self.embedding_parameter_frame.rowconfigure(1, weight=1)
-        self.embedding_parameter_frame.rowconfigure(2, weight=1)
-        self.embedding_parameter_frame.rowconfigure(3, weight=1)
-
-        # configure command window
-        # general controls
-        self.btn_start_func = ttk.Button(self.general_controls_frame, text="Start", command=self.start_func)
-        # self.btn_start_func.grid(row=0, column=0)
-        self.btn_start_func.pack(padx=10)
-
-        self.btn_stop_func = ttk.Button(self.general_controls_frame, text="Pause", command=self.stop_func)
-        # self.btn_stop_func.grid(row=1, column=0)
-        self.btn_stop_func.pack(padx=10)
-
-        self.btn_reset_func = ttk.Button(self.general_controls_frame, text="Reset", command=self.reset_func)
-        # self.btn_reset_func.grid(row=2, column=0)
-        self.btn_reset_func.pack(padx=10)
-
-        self.selected_option_func = tk.StringVar()
-        functions = ["Lorenz", "Chua", "Rossler", "Chen"]
-        self.selected_option_func.set(functions[0])
-        self.dropdown_func = ttk.OptionMenu(self.general_controls_frame, self.selected_option_func, *functions)
-        # self.dropdown_func.grid(row=3, column=0)
-        self.dropdown_func.pack(padx=10)
-        self.selected_option_func.trace("w", self.on_select)
-
-        self.btn_load_file = ttk.Button(self.general_controls_frame, text="Load Function",
-                                        command=self.load_python_module)
-        # self.btn_load_file.grid(row=4, column=0)
-        self.btn_load_file.pack(padx=10)
+        self.init_cond_frame.columnconfigure(1, weight=8)
 
         # Inputs for initial conditions
-        self.init_cond_label = tk.Label(self.init_cond_frame, text='Initial Conditions:')
+        self.init_cond_label = ttk.Label(self.init_cond_frame, text='Initial Conditions')
         self.init_cond_label.grid(row=0, column=0, columnspan=2)
-        self.init_cond_x_label = tk.Label(self.init_cond_frame, text='X:')
-        self.init_cond_x_label.grid(row=1, column=0)
-        self.init_cond_y_label = tk.Label(self.init_cond_frame, text='Y:')
-        self.init_cond_y_label.grid(row=2, column=0)
-        self.init_cond_z_label = tk.Label(self.init_cond_frame, text='Z:')
-        self.init_cond_z_label.grid(row=3, column=0)
+        self.init_cond_x_label = ttk.Label(self.init_cond_frame, text='X:')
+        self.init_cond_x_label.grid(row=1, column=0, padx=(10, 0), pady=(0, 10))
+        self.init_cond_y_label = ttk.Label(self.init_cond_frame, text='Y:')
+        self.init_cond_y_label.grid(row=2, column=0, padx=(10, 0), pady=(0, 10))
+        self.init_cond_z_label = ttk.Label(self.init_cond_frame, text='Z:')
+        self.init_cond_z_label.grid(row=3, column=0, padx=(10, 0), pady=(0, 10))
 
         self.init_cond_x_var = tk.IntVar(value=1)
         self.init_cond_y_var = tk.IntVar(value=1)
         self.init_cond_z_var = tk.IntVar(value=1)
 
-        self.init_cond_x_input = tk.Entry(self.init_cond_frame, textvariable=self.init_cond_x_var)
-        self.init_cond_x_input.grid(row=1, column=1)
-        self.init_cond_y_input = tk.Entry(self.init_cond_frame, textvariable=self.init_cond_y_var)
-        self.init_cond_y_input.grid(row=2, column=1)
-        self.init_cond_z_input = tk.Entry(self.init_cond_frame, textvariable=self.init_cond_z_var)
-        self.init_cond_z_input.grid(row=3, column=1)
+        self.init_cond_x_input = ttk.Entry(self.init_cond_frame, textvariable=self.init_cond_x_var, width=10)
+        self.init_cond_x_input.grid(row=1, column=1, sticky='ew', padx=(10, 0), pady=(0, 10))
+        self.init_cond_y_input = ttk.Entry(self.init_cond_frame, textvariable=self.init_cond_y_var, width=10)
+        self.init_cond_y_input.grid(row=2, column=1, sticky='ew', padx=(10, 0), pady=(0, 10))
+        self.init_cond_z_input = ttk.Entry(self.init_cond_frame, textvariable=self.init_cond_z_var, width=10)
+        self.init_cond_z_input.grid(row=3, column=1, sticky='ew', padx=(10, 0), pady=(0, 10))
 
-        # Inputs for embedding parameters
-        self.rec_param_label = tk.Label(self.embedding_parameter_frame, text='Embedding Parameters:')
-        self.rec_param_label.grid(row=0, column=0, columnspan=2)
-        self.embedding_dim_label_func = tk.Label(self.embedding_parameter_frame, text='m:')
-        self.embedding_dim_label_func.grid(row=1, column=0)
-        self.time_delay_label_func = tk.Label(self.embedding_parameter_frame, text='T:')
-        self.time_delay_label_func.grid(row=2, column=0)
-        self.threshold_label_func = tk.Label(self.embedding_parameter_frame, text='E:')
-        self.threshold_label_func.grid(row=3, column=0)
+    def general_controls_layout(self):
+        self.general_controls_frame = ttk.Frame(self.command_window_frame_top)
+        self.general_controls_frame.pack(side='left', anchor='c')
 
-        self.embedding_dim_var_func = tk.IntVar(value=1)
-        self.time_delay_var_func = tk.IntVar(value=1)
-        self.threshold_var_func = tk.DoubleVar(value=0.1)
-        self.threshold_check_var = tk.BooleanVar(value=True)
+        self.btn_start = ttk.Button(self.general_controls_frame, text="Start", command=self.start_func, width=10)
+        self.btn_start.pack(padx=10, fill='x')
 
-        self.embedding_dim_input_func = tk.Entry(self.embedding_parameter_frame, textvariable=self.embedding_dim_var_func)
-        self.embedding_dim_input_func.grid(row=1, column=1)
+        self.btn_stop = ttk.Button(self.general_controls_frame, text="Pause", command=self.stop_func)
+        self.btn_stop.pack(padx=10, fill='x')
 
-        self.time_delay_input_func = tk.Entry(self.embedding_parameter_frame, textvariable=self.time_delay_var_func)
-        self.time_delay_input_func.grid(row=2, column=1)
+        self.btn_reset = ttk.Button(self.general_controls_frame, text="Reset", command=self.reset_func)
+        self.btn_reset.pack(padx=10, fill='x')
 
-        self.threshold_frame = ttk.Frame(self.embedding_parameter_frame)
-        self.threshold_frame.grid(row=3, column=1)
-        vcmd = (self.init_cond_frame.register(self.validate_threshold), '%P')
-        self.threshold_input_func = ttk.Entry(self.threshold_frame, textvariable=self.threshold_var_func,
-                                              validate='focusout', validatecommand=vcmd)
-        self.threshold_input_func.pack(side='left')
+    def function_selection_layout(self):
+        self.function_selection_frame = ttk.Frame(self.command_window_frame_bottom)
+        self.function_selection_frame.pack(side='left', anchor='n')
 
-        self.threshold_check_button = ttk.Checkbutton(self.threshold_frame, text='threshold', variable=self.threshold_check_var)
-        self.threshold_check_button.pack(side='left', padx=20)
+        self.label_option = ttk.Label(self.function_selection_frame, text='Function: ')
+        self.label_option.pack(pady=(10,0), padx=10)
 
-        # Animation speed Control
-        self.slider_frame = ttk.Frame(self.user_input_frame)
-        self.slider_frame.pack(pady=20, fill='x')
+        self.selected_option_func = tk.StringVar()
+        functions = ["Lorenz", "Chua", "Rossler", "Chen"]
+        self.selected_option_func.set(functions[0])
+        self.dropdown_func = ttk.OptionMenu(self.function_selection_frame, self.selected_option_func, functions[0], *functions)
+        self.dropdown_func.pack(padx=10, fill='x')
+        self.selected_option_func.trace("w", self.on_select)
+
+        self.btn_load_file = ttk.Button(self.function_selection_frame, text="Load Function",
+                                        command=self.load_python_module)
+        self.btn_load_file.pack(padx=10)
+
+    def speed_control_layout(self):
+        self.slider_frame = ttk.Frame(self.command_window_frame_bottom)
+        self.slider_frame.pack(anchor='w', padx=5, pady=20)
 
         self.time_step_var = tk.IntVar(value=1)
         self.slider_label = ttk.Label(self.slider_frame, text="Animation Speed:")
         self.slider_label.pack(side='left')
         self.time_step_slider = ttk.Scale(self.slider_frame, from_=1, to=100, variable=self.time_step_var,
-                                          orient=tk.HORIZONTAL)
+                                          orient=tk.HORIZONTAL, length
+                                          =200)
         self.time_step_slider.pack(fill='x', padx=20)
 
-        # Select time series coordinate
-        self.coordinate_frame = ttk.Frame(self.user_input_frame)
-        self.coordinate_frame.pack(pady=20, fill='x')
+    def select_timeseries_layout(self):
+        self.coordinate_frame = ttk.Frame(self.command_window_frame_bottom)
+        self.coordinate_frame.pack(padx=5,fill='x')
 
         self.coord_label = ttk.Label(self.coordinate_frame, text="Variable of Interest:")
         self.coord_label.pack(side='left')
@@ -197,13 +158,46 @@ class funcTab:
                                               command=self.reset_func, variable=self.check_var_z)
         self.check_button_z.pack(side='left', padx=10)
 
+
+    def create_functions_tab(self):
+        self.command_window_frame_top = ttk.Frame(self.function_tab)
+        self.command_window_frame_top.place(relx=0, rely=0, relwidth=0.5, relheight=0.25)
+
+        self.command_window_frame_bottom = ttk.Frame(self.function_tab)
+        self.command_window_frame_bottom.place(relx=0, rely=0.25, relwidth=0.5, relheight=0.25)
+
+        self.rqa_frame = ttk.Frame(self.function_tab)
+
+
+        # set up control panel
+        self.general_controls_layout()
+        self.embedding_param_layout()
+        self.init_cond_layout()
+        self.function_selection_layout()
+        self.speed_control_layout()
+        self.select_timeseries_layout()
+
+        # set up figures
+        self.fig_ps_func = plt.Figure()
+        self.fig_comp_func = plt.Figure()
+        self.fig_rp_func = plt.Figure()
+
+        self.canvas_ps_func = FigureCanvasTkAgg(self.fig_ps_func, master=self.function_tab)
+        self.canvas_ps_func.get_tk_widget().place(relx=0.5, rely=0, relwidth=0.5, relheight=0.5)
+
+        self.canvas_comp_func = FigureCanvasTkAgg(self.fig_comp_func, master=self.function_tab)
+        self.canvas_comp_func.get_tk_widget().place(relx=0, rely=0.5, relwidth=0.5, relheight=0.5)
+
+        self.canvas_rp_func = FigureCanvasTkAgg(self.fig_rp_func, master=self.function_tab)
+        self.canvas_rp_func.get_tk_widget().place(relx=0.5, rely=0.5, relwidth=0.5, relheight=0.5)
+
         # RQA display
-        self.rqa_label_func = ttk.Label(self.command_window_func, text="RQA Measures will appear here")
+        self.rqa_label_func = ttk.Label(self.rqa_frame, text="RQA Measures will appear here")
         self.rqa_label_func.grid(row=0, column=2, rowspan=2)
 
     def validate_threshold(self, value_if_allowed):
         if not value_if_allowed:
-            self.threshold_var_func.set(0.1)
+            self.threshold_var.set(0.1)
             return True
         try:
             value = float(value_if_allowed)
@@ -212,7 +206,7 @@ class funcTab:
         except ValueError:
             pass
         self.show_error("Please enter a float between 0.0 and 1.0.")
-        self.threshold_var_func.set(0.1)
+        self.threshold_var.set(0.1)
         return False
 
     def show_error(self, message):
@@ -229,8 +223,8 @@ class funcTab:
             print(f"Module {module_name} loaded.")
 
     def toggle_buttons(self, state):
-        buttons = [self.btn_reset_func, self.dropdown_func, self.embedding_dim_input_func, self.time_delay_input_func,
-                   self.threshold_input_func, self.init_cond_x_input, self.init_cond_y_input, self.init_cond_z_input]
+        buttons = [self.btn_reset, self.dropdown_func, self.embedding_dim_input, self.time_delay_input,
+                   self.threshold_input, self.init_cond_x_input, self.init_cond_y_input, self.init_cond_z_input]
         for button in buttons:
             button.configure(state=state)
 
@@ -335,9 +329,9 @@ class funcTab:
 
     def calculate_recurrence_plot(self, data):
         # get embedding parameters from user input
-        self.m = self.embedding_dim_var_func.get()
-        self.T = self.time_delay_var_func.get()
-        self.epsilon = self.threshold_var_func.get()
+        self.m = self.embedding_dim_var.get()
+        self.T = self.time_delay_var.get()
+        self.epsilon = self.threshold_var.get()
 
         # embed time series
         self.num_vectors = len(data) - (self.m - 1) * self.T
