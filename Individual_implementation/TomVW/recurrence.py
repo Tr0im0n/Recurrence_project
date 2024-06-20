@@ -92,11 +92,11 @@ def convolve_triangle_shift(signal: np.ndarray, m: int = 5):
     my_zeros = np.zeros((my_length, my_length))
     rows, cols = np.triu_indices(my_length, k=1)
     my_zeros[rows, cols] = my_distances
-    flattened = my_zeros.flatten()
-    upper_left_triangle = flattened[:-1].reshape((my_length-1, my_length+1))
+    flattened = my_zeros.reshape((1, my_length * my_length))
+    upper_left_triangle = flattened[:, :-1].reshape((my_length-1, my_length+1))
     kernel = np.ones((m, 1))
     convolved = convolve2d(upper_left_triangle, kernel, "valid")
-    flattened = convolved.flatten()
+    flattened = convolved.reshape(1, (my_length-m)*(my_length+1))
     padded = np.zeros(my_length*my_length)
     padded[:(my_length-m)*(my_length+1)] = flattened
     half = padded.reshape((my_length, my_length))
@@ -120,13 +120,13 @@ def convolve_triangle_shift_with_timing(signal: np.ndarray, m: int = 5):
     rows, cols = np.triu_indices(my_length, k=1)
     my_zeros[rows, cols] = my_distances
     time_obj.new("Triangle filling")
-    flattened = my_zeros.flatten()
+    flattened = my_zeros.reshape((1, my_length * my_length))
     upper_left_triangle = flattened[:-1].reshape((my_length-1, my_length+1))
     kernel = np.ones((m, 1))
     time_obj.new("Reshape Triangle")
     convolved = convolve2d(upper_left_triangle, kernel, "valid")
     time_obj.new("Convolution")
-    flattened = convolved.flatten()
+    flattened = convolved.reshape(1, (my_length-m)*(my_length+1))
     padded = np.zeros(my_length*my_length)
     padded[:(my_length-m)*(my_length+1)] = flattened
     half = padded.reshape((my_length, my_length))
@@ -180,15 +180,11 @@ def test3(signal: np.ndarray, m: int = 5, t: int = 1):
     old_length = signal.shape[0]
     new_length = old_length - (m - 1) * t
     signal = signal.reshape(old_length, 1)
-    my_distances = cdist(signal, signal, "euclidean")
-    flat_distances = my_distances.flatten()
-    # starting_indices = np.arange(new_length*old_length)
-    # single_tile = np.ones(old_length)
-    # single_tile[new_length:] = np.zeros((m - 1) * t)
+    my_distances = cdist(signal, signal, "euclidean")   # old_length x old_length
+    flat_distances = my_distances.reshape(1, old_length*old_length)
     pattern_indices = np.arange(new_length)
-    full_block_indices = np.concatenate([pattern_indices + i * old_length for i in range(new_length)])
+    full_block_indices = np.concatenate([pattern_indices + i * old_length for i in range(new_length)])  # new_length x new_length
     # full_block_indices = np.concatenate([np.arange(i*old_length, i*old_length + new_length) for i in range(new_length)])
-
     indices = full_block_indices[:, None] + np.arange(0, m*(old_length+1), old_length+1)
     my_view = flat_distances[indices]
     result = np.sum(my_view, axis=1)
@@ -198,9 +194,9 @@ def test3(signal: np.ndarray, m: int = 5, t: int = 1):
 def view_cdist(signal, m: int = 5, t: int = 1):
     old_shape = signal.shape[0]
     new_shape = old_shape - (m - 1) * t
-    indices = np.arange(new_shape)[:, None] + np.arange(0, m * t, t)
-    result = signal[indices]
-    return cdist(result, result, metric='euclidean')
+    indices = np.arange(new_shape)[:, None] + np.arange(0, m * t, t)    # new_shape x m
+    result = signal[indices]    # just a view
+    return cdist(result, result, metric='euclidean')    # new_shape x new_shape
 
 
 def epsilon_slider():
@@ -255,7 +251,7 @@ def compare_all(n_samples: int = 1_000, m: int = 5):
              # hankel_kron_norm,
              # double_for_loop_hankel,
              # double_for_loop_length_matrix,
-             # convolve_triangle_shift,
+             convolve_triangle_shift,
              # convolve_diagonal,
              # carl,
              # test3,
@@ -268,7 +264,7 @@ def compare_all(n_samples: int = 1_000, m: int = 5):
 
     durations = time_obj.time_list
 
-    fig, axs = plt.subplots(2, 2)
+    fig, axs = plt.subplots(2, 3)
     fig.suptitle(f"Samples: {n_samples}")
     for ax, rp, duration, func in zip(axs.flat, rps, durations, funcs):
         ax.imshow(rp, cmap="gray", origin="lower")
