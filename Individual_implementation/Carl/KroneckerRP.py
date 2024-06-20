@@ -81,3 +81,17 @@ plt.title('Recurrence Plot')
 plt.xlabel('Time Steps')
 plt.ylabel('Time Steps')
 plt.show()
+
+def detect_changes(rqa_measures, threshold=0.2, window_size=5):
+    detected_points = {
+        'RR': [],
+        'DET': [],
+        'LAM': []
+    }
+    for i in range(window_size, len(rqa_measures)):
+        for measure, name in zip([0, 1, 2], ['RR', 'DET', 'LAM']):
+            current_value = rqa_measures[i][measure]
+            avg_past_values = np.mean([rqa_measures[j][measure] for j in range(i - window_size, i)])
+            if abs(current_value - avg_past_values) > threshold * avg_past_values:
+                detected_points[name].append(i)  # Record the index of the RQA measure change
+    return detected_points
