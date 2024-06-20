@@ -4,14 +4,12 @@ from scipy.integrate import solve_ivp
 from itertools import groupby
 import matplotlib.pyplot as plt
 import simdat as sd
+import pandas as pd
 
 # -----------------------------------------------------------------------------------------------------------------------------------
 # TO-DO:
-# 1. verify correctness of rqa measures (Fix ENTR)
-# 3. implement decision tree like classifier (If RR > 0.5 then 1 else 0 etc.)
 # 4. Try different event types (look for literature)
 # 5. Try bearing dataset
-# 6. label recurrence plots as faulty/healthy based on the array containing the spike coordinates.
 # ------------------------ CLASSIFIER LAYOUT ----------------------------------------------------------------------------------------
 # 1. Anomaly Detection
 #   - Single rbf-kernel SVM (healthy vs faulty)
@@ -107,38 +105,52 @@ def classify_recurrence_plots(rqa_measures, threshold_dict):
             classifications.append(0)
     return classifications
 
-timeseries, spike_locations = sd.composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8, return_spike_locations=True)
+# ts, spike_locations = sd.composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8, return_spike_locations=True)
 
-m = 3 # embedding dimension
-T = 2 # delay
+# ----------------------------
+# Bearing Data Set
+ts = pd.read_csv('C:/Users/carle/OneDrive/Dokumente/GitHub/Recurrence_project/datasets/normal_3hp_1730rpm.csv')['X100_DE_time']
+# ts = pd.read_csv('C:/Users/carle/OneDrive/Dokumente/GitHub/Recurrence_project/datasets/InnerRace_0.028.csv')['X059_DE_time']
+# ts = pd.read_csv('C:/Users/carle/OneDrive/Dokumente/GitHub/Recurrence_project/datasets/Ball_0.028.csv')['X051_DE_time']
+# ----------------------------
+
+ts = ts[0:250000].values
+
+print(ts)
+plt.plot(ts)
+plt.show()
+
+m = 5 # embedding dimension
+T = 3 # delay
 epsilon = 0.1 # threshold
 
-l = 200  # Window size
-delay = 5  # Delay before calculating next RP
+l = 500  # Window size
+delay = 50  # Delay before calculating next RP
 
 recurrence_plots = []
 rqa_measures = []
 
-for start in range(0, len(timeseries) - l + 1, delay):
-    window = timeseries[start:start + l]
+for start in range(0, len(ts) - l + 1, delay):
+    window = ts[start:start + l]
     rp = calc_recurrence_plots(window, m, T, epsilon)
     recurrence_plots.append(rp)
     rqa_metrics = calc_rqa_measures(rp)
     rqa_measures.append(rqa_metrics)
 
-# labeling the recurrence plots
-labels = np.zeros(int((len(timeseries)-l)/delay))
-for i in range(0, len(recurrence_plots)-1):
-    if any(spike_locations[i*5:i*5+200]):
-        labels[i] = 1
-
-plt.plot(timeseries)
-plt.show()
 plot_rqa_measures(recurrence_plots, rqa_measures)
+plt.show()
 
-thresholds = {'RR': 0.1, 'DET': 0.6,'LAM': 0.7, 'ENTR': 1.0, 'TT': 3.0}  
-classifications = classify_recurrence_plots(rqa_measures, thresholds)
+# # labeling the recurrence plots
+# labels = np.zeros(int((len(ts)-l)/delay))
+# for i in range(0, len(recurrence_plots)-1):
+#     if any(spike_locations[i*5:i*5+200]):
+#         labels[i] = 1
 
-print(f"Classifications: {classifications}")
-print(f"Labels: {labels}")
+# thresholds = {'RR': 0.1, 'DET': 0.6,'LAM': 0.7, 'ENTR': 1.0, 'TT': 3.0}  
+# classifications = classify_recurrence_plots(rqa_measures, thresholds)
+
+# print(f"Classifications: {classifications}")
+# print(f"Labels: {labels}")
+
+
 
