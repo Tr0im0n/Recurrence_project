@@ -7,6 +7,11 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 
+# To-Do
+# 1. Fix TT RQA-measure
+# 2. Try differnt SVM setups
+# 3. implement SVM to classify fault type
+# 4. clean code 
 
 def calc_recurrence_plots(timeseries, m, T, epsilon):
     num_vectors = len(timeseries) - (m - 1) * T
@@ -57,7 +62,7 @@ def calc_rqa_measures(recurrence_matrix, min_line_length=2):
     LAM = sum(l for l in vert_lengths if l >= min_line_length) / np.sum(recurrence_matrix) if np.sum(recurrence_matrix) != 0 else 0
 
     # Calculate trapping time (TT)
-    TT = np.mean([l for l in vert_lengths if l >= min_line_length]) if vert_lengths else 0
+    # TT = np.mean([l for l in vert_lengths if l >= min_line_length]) if vert_lengths else 0
 
     # Calculate maximum length of vertical structures (Vmax)
     Vmax = max(vert_lengths) if vert_lengths else 0
@@ -70,7 +75,7 @@ def calc_rqa_measures(recurrence_matrix, min_line_length=2):
     # Ratio between DET and RR
     DET_RR = DET / RR if RR > 0 else 0
 
-    return {'RR': RR, 'DET': DET, 'LAM': LAM, 'DET_RR': DET_RR, 'L': L, 'TT': TT, 'DIV': DIV, 'ENTR': ENTR, 'TREND': TREND}
+    return {'RR': RR, 'DET': DET, 'LAM': LAM, 'DET_RR': DET_RR, 'L': L, 'DIV': DIV, 'ENTR': ENTR, 'TREND': TREND}
 
 # Bearing Data Set
 healthy = pd.read_csv('C:/Users/carle/OneDrive/Dokumente/GitHub/Recurrence_project/datasets/normal_3hp_1730rpm.csv')['X100_DE_time'][0:25000].values
@@ -104,8 +109,6 @@ data = pd.concat([healthy_measures, faulty_measures])
 # Shuffle the data
 data = data.sample(frac=1).reset_index(drop=True)
 
-print(data.isna().sum())
-
 # Split features and labels
 X = data.drop('label', axis=1)
 y = data['label']
@@ -117,8 +120,6 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
-
-
 
 # Initialize SVM classifier
 svm_classifier = SVC(kernel='linear', C=1.0)
