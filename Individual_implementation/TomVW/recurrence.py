@@ -14,6 +14,7 @@ def get_length_matrix(signal: np.ndarray):
     """
     Just used in following function
     Just replace with squareform(pdist(...))
+    Nvm use cdist(...)
     """
     length = signal.shape[0]
     ans = np.zeros((length, length))
@@ -24,18 +25,18 @@ def get_length_matrix(signal: np.ndarray):
     return ans
 
 
-def double_for_loop_length_matrix(signal: np.ndarray, m: int = 5):
+def double_for_loop_length_matrix(signal: np.ndarray, m: int = 5, t: int = 1):
     """ Double for loop implementation """
     length = signal.shape[0]
     signal = signal.reshape(length, 1)
-    length_matrix = squareform(pdist(signal))
+    length_matrix = cdist(signal, signal)
     ans = np.zeros_like(length_matrix)
 
     for i in range(length-m):
         for j in range(length-m):
-            my_len = sum([length_matrix[i+k, j+k] for k in range(m)])
+            # my_len = sum([length_matrix[i+k, j+k] for k in range(m)])
             # clip = 0 if my_len < 0.1 else 1
-            ans[i, j] = my_len  # clip
+            ans[i, j] = np.sum(length_matrix[i:i + m * t:t, j:j + m * t:t])  # clip, my_len
     return ans
 
 
@@ -181,9 +182,25 @@ def test3(signal: np.ndarray, m: int = 5, t: int = 1):
     signal = signal.reshape(old_length, 1)
     my_distances = cdist(signal, signal, "euclidean")
     flat_distances = my_distances.flatten()
-    indices = np.arange(new_length)[:, None] + np.arange(0, m*(old_length+1), old_length+1)
-    result = flat_distances[indices]
+    # starting_indices = np.arange(new_length*old_length)
+    # single_tile = np.ones(old_length)
+    # single_tile[new_length:] = np.zeros((m - 1) * t)
+    pattern_indices = np.arange(new_length)
+    full_block_indices = np.concatenate([pattern_indices + i * old_length for i in range(new_length)])
+    # full_block_indices = np.concatenate([np.arange(i*old_length, i*old_length + new_length) for i in range(new_length)])
 
+    indices = full_block_indices[:, None] + np.arange(0, m*(old_length+1), old_length+1)
+    my_view = flat_distances[indices]
+    result = np.sum(my_view, axis=1)
+    return result.reshape((new_length, new_length))
+
+
+def view_cdist(signal, m: int = 5, t: int = 1):
+    old_shape = signal.shape[0]
+    new_shape = old_shape - (m - 1) * t
+    indices = np.arange(new_shape)[:, None] + np.arange(0, m * t, t)
+    result = signal[indices]
+    return cdist(result, result, metric='euclidean')
 
 
 def epsilon_slider():
@@ -231,25 +248,27 @@ def epsilon_slider():
     plt.show()
 
 
-def compare_all(n_samples: int = 1_000):
+def compare_all(n_samples: int = 1_000, m: int = 5):
     my_signal = composite_signal(n_samples, ((0.01, 4), (0.02, 2), (0.04, 1)))    # ((1, 4), (2, 2), (4, 1))
     funcs = [hankel_pdist,
              martina,
              # hankel_kron_norm,
              # double_for_loop_hankel,
              # double_for_loop_length_matrix,
-             convolve_triangle_shift,
-             convolve_diagonal,
-             carl]
+             # convolve_triangle_shift,
+             # convolve_diagonal,
+             # carl,
+             # test3,
+             view_cdist]
     rps = []
     time_obj = TimeObject()
     for func in funcs:
-        rps.append(func(my_signal))
+        rps.append(func(my_signal, m))
         time_obj.new("")
 
     durations = time_obj.time_list
 
-    fig, axs = plt.subplots(2, 3)
+    fig, axs = plt.subplots(2, 2)
     fig.suptitle(f"Samples: {n_samples}")
     for ax, rp, duration, func in zip(axs.flat, rps, durations, funcs):
         ax.imshow(rp, cmap="gray", origin="lower")
