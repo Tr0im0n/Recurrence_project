@@ -107,6 +107,27 @@ def compare_rp():
     plt.show()
 
 
+def test3(signal: np.ndarray, m: int = 5, t: int = 1):
+    old_length = signal.shape[0]
+    new_length = old_length - (m - 1) * t
+    signal = signal.reshape(old_length, 1)
+    my_distances = cdist(signal, signal, "euclidean")
+    flat_distances = my_distances.reshape(1, old_length*old_length)
+    # starting_indices = np.arange(new_length*old_length)
+    # single_tile = np.ones(old_length)
+    # single_tile[new_length:] = np.zeros((m - 1) * t)
+    pattern_indices = np.arange(new_length)
+    full_block_indices = np.concatenate([pattern_indices + i * old_length for i in range(new_length)])
+    # full_block_indices = np.concatenate([np.arange(i*old_length, i*old_length + new_length) for i in range(new_length)])
+
+    indices = full_block_indices[:, None] + np.arange(0, m*(old_length+1), old_length+1)
+    my_view = flat_distances[indices]
+    result = np.sum(my_view, axis=1)
+    return result.reshape((new_length, new_length))
+
+
+
+
 if __name__ == "__main__":
     compare_rp()
 
