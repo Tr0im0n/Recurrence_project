@@ -109,12 +109,11 @@ def classify_recurrence_plots(rqa_measures, threshold_dict):
 
 # ----------------------------
 # Bearing Data Set
-ts = pd.read_csv('C:/Users/carle/OneDrive/Dokumente/GitHub/Recurrence_project/datasets/normal_3hp_1730rpm.csv')['X100_DE_time']
-# ts = pd.read_csv('C:/Users/carle/OneDrive/Dokumente/GitHub/Recurrence_project/datasets/InnerRace_0.028.csv')['X059_DE_time']
-# ts = pd.read_csv('C:/Users/carle/OneDrive/Dokumente/GitHub/Recurrence_project/datasets/Ball_0.028.csv')['X051_DE_time']
-# ----------------------------
+ts = pd.read_csv('C:/Users/carle/OneDrive/Dokumente/GitHub/Recurrence_project/datasets/normal_3hp_1730rpm.csv')['X100_DE_time'][0:250000].values
+# ts = pd.read_csv('C:/Users/carle/OneDrive/Dokumente/GitHub/Recurrence_project/datasets/InnerRace_0.028.csv')['X059_DE_time'][0:250000].values
+# ts = pd.read_csv('C:/Users/carle/OneDrive/Dokumente/GitHub/Recurrence_project/datasets/Ball_0.028.csv')['X051_DE_time'][0:250000].values
 
-ts = ts[0:250000].values
+# ----------------------------
 
 print(ts)
 plt.plot(ts)
