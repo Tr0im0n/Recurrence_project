@@ -37,16 +37,9 @@ def plot_rqa_measures(recurrence_plots, rqa_measures):
     plt.show()
 
 def calcRP(timeseries, m, T, epsilon):
-    l = timeseries.shape[0]
-    ones = np.ones_like(timeseries)
-
-    H = np.zeros((l-m+1, m)) # Trajectory Matrix
-    for i in range(l-m*T+1):
-        H[i] = timeseries[i:i+m*T:T]
-
-    P = np.kron(ones, H) - np.kron(H, ones)
-    distance_matrix = squareform(pdist(P, 'euclidean'))
-
+    num_vectors = len(timeseries) - (m - 1) * T
+    vectors = np.array([timeseries[i:i + m*T:T] for i in range(num_vectors)])
+    distance_matrix = squareform(pdist(vectors, metric='euclidean'))
     # Normalize the distance matrix
     max_distance = np.max(distance_matrix)
     if max_distance > 0:
@@ -81,7 +74,7 @@ def calcRQAMeasures(recurrence_matrix, min_line_length=2):
     # Calculate ENTR
     counts = np.bincount(diag_lengths)
     probs = counts / np.sum(counts) if np.sum(counts) > 0 else np.array([0])
-    # ENTR = -np.sum(probs * np.log(probs)) if np.sum(counts) > 0 else 0
+    ENTR = -np.sum(probs * np.log(probs)) if np.sum(counts) > 0 else 0
 
     # Calculate trend (TREND)
     TREND = np.mean([np.mean(recurrence_matrix[i, i:]) for i in range(len(recurrence_matrix))])
@@ -105,7 +98,7 @@ def calcRQAMeasures(recurrence_matrix, min_line_length=2):
     # Ratio between DET and RR
     DET_RR = DET / RR if RR > 0 else 0
 
-    return RR, DET, LAM, DET_RR, L, TT, DIV, TREND
+    return RR, DET, LAM, DET_RR, L, TT, DIV, ENTR, TREND
 
 def detect_changes(rqa_measures, threshold=0.2, window_size=5):
     detected_points = {
@@ -150,7 +143,7 @@ print(labels)
 
 plt.plot(timeseries)
 plt.show()
-# plot_rqa_measures(recurrence_plots, rqa_measures)
+plot_rqa_measures(recurrence_plots, rqa_measures)
 
 # Detect changes in RR, DET, LAM
 # detected_points = detect_changes(rqa_measures)
