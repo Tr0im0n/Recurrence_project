@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy
 from matplotlib.widgets import Slider, Button
-from scipy.spatial.distance import pdist, squareform
+from scipy.spatial.distance import pdist, squareform, cdist
 from scipy.signal import convolve2d
 
 from Individual_implementation.TomVW.synthetic import composite_signal
@@ -173,6 +173,17 @@ def carl(signal, m: int = 5, t: int = 1, epsilon: float = 0.1):
 
     # recurrence_matrix = (distance_matrix <= epsilon).astype(int)
     # return recurrence_matrix
+
+
+def test3(signal: np.ndarray, m: int = 5, t: int = 1):
+    old_length = signal.shape[0]
+    new_length = old_length - (m - 1) * t
+    signal = signal.reshape(old_length, 1)
+    my_distances = cdist(signal, signal, "euclidean")
+    flat_distances = my_distances.flatten()
+    indices = np.arange(new_length)[:, None] + np.arange(0, m*(old_length+1), old_length+1)
+    result = flat_distances[indices]
+
 
 
 def epsilon_slider():
