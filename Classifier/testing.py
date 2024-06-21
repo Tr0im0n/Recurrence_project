@@ -109,22 +109,24 @@ def classify_recurrence_plots(rqa_measures, threshold_dict):
 
 # ----------------------------
 # Bearing Data Set
-ts = pd.read_csv('Classifier/data/normal_3hp_1730rpm.csv')['X100_DE_time'][0:25000].values
+# ts = pd.read_csv('Classifier/data/normal_3hp_1730rpm.csv')['X100_DE_time'][0:25000].values
 # ts = pd.read_csv('Classifier/data/InnerRace_0.028.csv')['X059_DE_time'][0:250000].values
 # ts = pd.read_csv('Classifier/data/Ball_0.028.csv')['X051_DE_time'][0:250000].values
-
 # ----------------------------
 
+# synth2
+ts = pd.read_csv('Classifier/data/synthetic_fault_data.csv')['Signal'][0:10000].values
+
 #print(ts)
-#plt.plot(ts)
-#plt.show()
+plt.plot(ts)
+plt.show()
 
 m = 4 # embedding dimension
 T = 2 # delay
 epsilon = 0.1 # threshold
 
-l = 500  # Window size
-delay = 10  # Delay before calculating next RP
+l = 100  # Window size
+delay = 20  # Delay before calculating next RP
 
 recurrence_plots = []
 rqa_measures = []
@@ -136,11 +138,11 @@ for start in range(0, len(ts) - l + 1, delay):
     rqa_metrics = calc_rqa_measures(rp)
     rqa_measures.append(rqa_metrics)
 
-plt.imshow(recurrence_plots[0], cmap='binary', origin='lower')
-plt.show()
+# plt.imshow(recurrence_plots[0], cmap='binary', origin='lower')
+# plt.show()
 
-#plot_rqa_measures(recurrence_plots, rqa_measures)
-#plt.show()
+plot_rqa_measures(recurrence_plots, rqa_measures)
+plt.show()
 
 # # labeling the recurrence plots
 # labels = np.zeros(int((len(ts)-l)/delay))
