@@ -78,9 +78,9 @@ def calc_rqa_measures(recurrence_matrix, min_line_length=2):
     return {'RR': RR, 'DET': DET, 'LAM': LAM, 'DET_RR': DET_RR, 'L': L, 'DIV': DIV, 'ENTR': ENTR, 'TREND': TREND}
 
 # Bearing Data Set
-healthy = pd.read_csv('normal_3hp_1730rpm.csv')['X100_DE_time'][0:25000].values
-inner_race_fault = pd.read_csv('InnerRace_0.028.csv')['X059_DE_time'][0:25000].values
-ball_fault = pd.read_csv('Ball_0.028.csv')['X051_DE_time'][0:25000].values
+healthy = pd.read_csv('Classifier/data/normal_3hp_1730rpm.csv')['X100_DE_time'][0:25000].values
+inner_race_fault = pd.read_csv('Classifier/data/InnerRace_0.028.csv')['X059_DE_time'][0:25000].values
+ball_fault = pd.read_csv('Classifier/data/Ball_0.028.csv')['X051_DE_time'][0:25000].values
 
 m = 5 # embedding dimension
 T = 2 # delay
