@@ -1,6 +1,7 @@
 import numpy as np
 import scipy
 from matplotlib import pyplot as plt
+from matplotlib.ticker import ScalarFormatter
 from scipy.spatial.distance import cdist, pdist, squareform
 
 from Individual_implementation.TomVW.synthetic import composite_signal
@@ -13,12 +14,12 @@ def hankel(signal: np.ndarray, m: int = 5):
     return scipy.linalg.hankel(signal[:new_length], signal[new_length-1:])
 
 
-def hankel_martina(signal: np.ndarray, m: int = 5, t: int = 1):
+def hankel_list_comprehension(signal: np.ndarray, m: int = 5, t: int = 1):
     num_vectors = len(signal) - (m - 1) * t
     return np.array([signal[i:i + m*t:t] for i in range(num_vectors)])
 
 
-def hankel_carl(signal: np.ndarray, m: int = 5, t: int = 1):
+def hankel_fill_zeros(signal: np.ndarray, m: int = 5, t: int = 1):
     old_length = signal.shape[0]
     new_length = old_length - m * t + 1
 
@@ -27,7 +28,7 @@ def hankel_carl(signal: np.ndarray, m: int = 5, t: int = 1):
         hankel_like[i] = signal[i:i + m * t:t]
 
 
-def hankel_chatgpt(signal: np.ndarray, m: int = 5, t: int = 1):
+def hankel_view(signal: np.ndarray, m: int = 5, t: int = 1):
     n = len(signal)
     num_rows = n - (m - 1) * t
     # if num_rows <= 0:
@@ -40,10 +41,10 @@ def hankel_chatgpt(signal: np.ndarray, m: int = 5, t: int = 1):
 def compare_hankel(n_samples: int = 10_000):
     # my_signal = composite_signal(n_samples, ((0.01, 4), (0.02, 2), (0.04, 1)))    # ((1, 4), (2, 2), (4, 1))
     funcs = [hankel,
-             hankel_martina,
-             hankel_carl,
-             hankel_chatgpt]
-    sizes = np.arange(100_000, 1_000_000, 100_000)
+             hankel_list_comprehension,
+             hankel_fill_zeros,
+             hankel_view]
+    sizes = np.arange(100_000, 1_000_001, 100_000)
     signals = [composite_signal(size, ((0.01, 4), (0.02, 2), (0.04, 1))) for size in sizes]
     hankel_likes = []
     durations = []
@@ -67,6 +68,14 @@ def compare_hankel(n_samples: int = 10_000):
     ax.set_xlabel("Amount of samples (#)")
     ax.set_ylabel("Time (s)")
     ax.legend()
+
+    formatter = ScalarFormatter()
+    formatter.set_scientific(True)
+    formatter.set_powerlimits((-3, 3))  # This sets when to use scientific notation
+
+    ax.xaxis.set_major_formatter(formatter)
+    ax.set_xticks(sizes)
+
     plt.show()
 
 
@@ -83,7 +92,7 @@ def compare_rp():
     max_size = 10_000
     sizes = np.arange(min_size, max_size, min_size)
     max_signal = composite_signal(max_size, ((0.01, 4), (0.02, 2), (0.04, 1)))
-    max_hankel = hankel_chatgpt(max_signal, 5, 2)
+    max_hankel = hankel_view(max_signal, 5, 2)
     hankels = [max_hankel[:size] for size in sizes]
     funcs = [rp_cdist, rp_pdist]
     durations = []
@@ -128,5 +137,5 @@ def test3(signal: np.ndarray, m: int = 5, t: int = 1):
 
 if __name__ == "__main__":
     compare_hankel()
-    compare_rp()
+    # compare_rp()
 

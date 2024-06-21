@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy
 from matplotlib.widgets import Slider, Button
+from pyts.image import RecurrencePlot
 from scipy.spatial.distance import pdist, squareform, cdist
 from scipy.signal import convolve2d
 
@@ -191,6 +192,17 @@ def test3(signal: np.ndarray, m: int = 5, t: int = 1):
     return result.reshape((new_length, new_length))
 
 
+def package(signal: np.ndarray, m: int = 5, t: int = 1):
+    time_obj = TimeObject()
+    signal = signal.reshape((1, -1))
+    time_obj.new("Reshape")
+    rp = RecurrencePlot(m, t)
+    time_obj.new("Init")
+    ans = rp.transform(signal)[0]
+    time_obj.new("Transform")
+    return ans
+
+
 def view_cdist(signal, m: int = 5, t: int = 1):
     old_shape = signal.shape[0]
     new_shape = old_shape - (m - 1) * t
@@ -244,7 +256,7 @@ def epsilon_slider():
     plt.show()
 
 
-def compare_all(n_samples: int = 2_000, m: int = 5):
+def compare_all(n_samples: int = 4_000, m: int = 5):
     my_signal = composite_signal(n_samples, ((0.01, 4), (0.02, 2), (0.04, 1)))    # ((1, 4), (2, 2), (4, 1))
     funcs = [hankel_pdist,
              # martina,
@@ -255,7 +267,8 @@ def compare_all(n_samples: int = 2_000, m: int = 5):
              # convolve_diagonal,
              # carl,
              test3,
-             view_cdist]
+             view_cdist,
+             package]
     rps = []
     time_obj = TimeObject()
     for func in funcs:
@@ -272,8 +285,27 @@ def compare_all(n_samples: int = 2_000, m: int = 5):
     plt.show()
 
 
+def view_cdist_vs_time(max_samples: int = 10_000, m: int = 5):
+    my_signal = composite_signal(max_samples, ((0.01, 4), (0.02, 2), (0.04, 1)))    # ((1, 4), (2, 2), (4, 1))
+    rps = []
+    sizes = np.arange(1_000, max_samples+1, 1_000)
+    time_obj = TimeObject()
+    for size in sizes:
+        rps.append(view_cdist(my_signal[:size], m))
+        time_obj.new("")
+
+    durations = time_obj.time_list
+
+    fig, ax = plt.subplots(1, 1)
+    fig.suptitle(f"{view_cdist.__name__}")
+    ax.plot(sizes, durations)
+    ax.set_xlabel("Amount of samples (#)")
+    ax.set_ylabel("Time (s)")
+    plt.show()
+
+
 if __name__ == "__main__":
-    compare_all()
+    view_cdist_vs_time()
 
 
 """
