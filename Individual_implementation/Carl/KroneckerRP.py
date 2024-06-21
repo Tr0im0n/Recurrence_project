@@ -16,7 +16,7 @@ def lorenz(t, Y, sigma, rho, beta):
     x, y, z = Y
     return [sigma * (y - x), x * (rho - z) - y, x * y - beta * z]
 
-def RecurrencePlot(timeseries, m, T, epsilon):
+def RecurrencePlot(timeseries, m, T, epsilon): # RUBBISH
     l = timeseries.shape[0]
     ones = np.ones_like(timeseries)
 
@@ -25,7 +25,7 @@ def RecurrencePlot(timeseries, m, T, epsilon):
         H[i] = timeseries[i:i+m*T:T]
 
     P = np.kron(ones, H) - np.kron(H, ones) 
-    distance_matrix = squareform(pdist(P, 'euclidean'))
+    distance_matrix = np.linalg.norm(P, axis=1)
 
     recurrence_matrix = (distance_matrix <= epsilon).astype(int)
     return recurrence_matrix
@@ -81,3 +81,17 @@ plt.title('Recurrence Plot')
 plt.xlabel('Time Steps')
 plt.ylabel('Time Steps')
 plt.show()
+
+def detect_changes(rqa_measures, threshold=0.2, window_size=5):
+    detected_points = {
+        'RR': [],
+        'DET': [],
+        'LAM': []
+    }
+    for i in range(window_size, len(rqa_measures)):
+        for measure, name in zip([0, 1, 2], ['RR', 'DET', 'LAM']):
+            current_value = rqa_measures[i][measure]
+            avg_past_values = np.mean([rqa_measures[j][measure] for j in range(i - window_size, i)])
+            if abs(current_value - avg_past_values) > threshold * avg_past_values:
+                detected_points[name].append(i)  # Record the index of the RQA measure change
+    return detected_points

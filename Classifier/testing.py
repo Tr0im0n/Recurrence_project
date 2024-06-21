@@ -4,43 +4,38 @@ from scipy.integrate import solve_ivp
 from itertools import groupby
 import matplotlib.pyplot as plt
 import simdat as sd
+import pandas as pd
 
-# --------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------------------
 # TO-DO:
-# 1. verify correctness of rqa measures
-# 2. Check each RQA-M reaction to spike type event
-# 3. implement decision tree like classifier (If RR > 0.5 then 1 else 0 etc.)
-# 4. Try different event types
-# 5. Set up WOA-SVM training and testing
-# --------------------------------------------------------
+# 4. Try different event types (look for literature)
+# 5. Try bearing dataset
+# ------------------------ CLASSIFIER LAYOUT ----------------------------------------------------------------------------------------
+# 1. Anomaly Detection
+#   - Single rbf-kernel SVM (healthy vs faulty)
+# 2. Anomaly Classification
+#   - multiple linear-kernel SVMs (comparing each anomaly class to each other one by one)
+#   - each SVM classifier votes on one anomaly class => majority anomaly class is chosen
+# -----------------------------------------------------------------------------------------------------------------------------------	
 
 def plot_rqa_measures(recurrence_plots, rqa_measures):
-    # Create separate plots for each RQA measure
-    measure_names = ['Recurrence Rate', 'Determinism', 'Laminarity', 'Ratio DET/RR', 'Avg Diagonal Length', 'Trapping Time', 'Divergence', 'Entropy', 'Trend']
-    plt.figure(figsize=(12, 18))  # Adjust the figure size as needed
+    plt.figure(figsize=(12, 18))
+    measure_names = list(rqa_measures[0].keys())  # Get measure names from the dictionary keys
     for index, name in enumerate(measure_names):
-        measure_data = [measure[index] for measure in rqa_measures]
+        measure_data = [measure[name] for measure in rqa_measures]
         ax = plt.subplot(len(measure_names), 1, index + 1)
         ax.plot(measure_data, linestyle='-', color='b')
         ax.set_title(name)
         ax.set_xlabel('Recurrence Plot Index')
         ax.set_ylabel(name)
         ax.grid(True)
-
     plt.tight_layout()
     plt.show()
 
-def calcRP(timeseries, m, T, epsilon):
-    l = timeseries.shape[0]
-    ones = np.ones_like(timeseries)
-
-    H = np.zeros((l-m+1, m)) # Trajectory Matrix
-    for i in range(l-m*T+1):
-        H[i] = timeseries[i:i+m*T:T]
-
-    P = np.kron(ones, H) - np.kron(H, ones)
-    distance_matrix = squareform(pdist(P, 'euclidean'))
-
+def calc_recurrence_plots(timeseries, m, T, epsilon):
+    num_vectors = len(timeseries) - (m - 1) * T
+    vectors = np.array([timeseries[i:i + m*T:T] for i in range(num_vectors)])
+    distance_matrix = squareform(pdist(vectors, metric='euclidean'))
     # Normalize the distance matrix
     max_distance = np.max(distance_matrix)
     if max_distance > 0:
@@ -51,7 +46,7 @@ def calcRP(timeseries, m, T, epsilon):
     recurrence_matrix = (normalized_distance_matrix <= epsilon).astype(int)
     return recurrence_matrix
 
-def calcRQAMeasures(recurrence_matrix, min_line_length=2):
+def calc_rqa_measures(recurrence_matrix, min_line_length=2):
     time_series_length = recurrence_matrix.shape[0]
     # Calculate recurrence rate (RR)
     RR = np.sum(recurrence_matrix) / (time_series_length ** 2)
@@ -74,9 +69,8 @@ def calcRQAMeasures(recurrence_matrix, min_line_length=2):
 
     # Calculate ENTR
     counts = np.bincount(diag_lengths)
-    counts_nonzero = counts[counts > 0]  # Remove zero counts
-    probs = counts_nonzero / np.sum(counts_nonzero) if np.sum(counts_nonzero) > 0 else np.array([0])
-    ENTR = -np.sum(probs * np.log(probs)) if np.sum(counts_nonzero) > 0 else 0
+    probs = counts / np.sum(counts) if np.sum(counts) > 0 else np.array([0])
+    ENTR = -np.sum(probs * np.log(probs + np.finfo(float).eps)) if np.sum(counts) > 0 else 0
 
     # Calculate trend (TREND)
     TREND = np.mean([np.mean(recurrence_matrix[i, i:]) for i in range(len(recurrence_matrix))])
@@ -94,59 +88,68 @@ def calcRQAMeasures(recurrence_matrix, min_line_length=2):
 
     # Calculate entropy of vertical structures (VENTR)
     vert_counts = np.bincount(vert_lengths)
-    vert_counts_nonzero = vert_counts[vert_counts > 0]  # Remove zero counts
-    vert_probs = vert_counts_nonzero / np.sum(vert_counts_nonzero) if np.sum(vert_counts_nonzero) > 0 else np.array([0])
-    VENTR = -np.sum(vert_probs * np.log(vert_probs)) if np.sum(vert_counts_nonzero) > 0 else 0
+    vert_probs = vert_counts / np.sum(vert_counts) if np.sum(vert_counts) > 0 else np.array([0])
+    # VENTR = -np.sum(vert_probs * np.log(vert_probs)) if np.sum(vert_counts) > 0 else 0
 
     # Ratio between DET and RR
     DET_RR = DET / RR if RR > 0 else 0
 
-    return RR, DET, LAM, DET_RR, L, TT, DIV, ENTR, TREND
+    return {'RR': RR, 'DET': DET, 'LAM': LAM, 'DET_RR': DET_RR, 'L': L, 'TT': TT, 'DIV': DIV, 'ENTR': ENTR, 'TREND': TREND}
 
-# Example usage
-timeseries = sd.composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8)
-recurrence_matrix = calcRP(timeseries, m=3, T=2, epsilon=0.1)
-rqa_measures = calcRQAMeasures(recurrence_matrix)
-print(rqa_measures)
-def detect_changes(rqa_measures, threshold=0.2, window_size=5):
-    detected_points = {
-        'RR': [],
-        'DET': [],
-        'LAM': []
-    }
-    for i in range(window_size, len(rqa_measures)):
-        for measure, name in zip([0, 1, 2], ['RR', 'DET', 'LAM']):
-            current_value = rqa_measures[i][measure]
-            avg_past_values = np.mean([rqa_measures[j][measure] for j in range(i - window_size, i)])
-            if abs(current_value - avg_past_values) > threshold * avg_past_values:
-                detected_points[name].append(i)  # Record the index of the RQA measure change
-    return detected_points
+def classify_recurrence_plots(rqa_measures, threshold_dict):
+    classifications = []
+    for measures in rqa_measures:
+        if any(measures[measure] > threshold for measure, threshold in threshold_dict.items()):
+            classifications.append(1)
+        else:
+            classifications.append(0)
+    return classifications
 
-timeseries = sd.composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8)
+# ts, spike_locations = sd.composite_signal(1000, ((0.1, 2), (0.19, 1)), noise_amplitude=0.8, return_spike_locations=True)
 
-m = 3 # embedding dimension
-T = 2 # delay
+# ----------------------------
+# Bearing Data Set
+ts = pd.read_csv('C:/Users/carle/OneDrive/Dokumente/GitHub/Recurrence_project/datasets/normal_3hp_1730rpm.csv')['X100_DE_time'][0:250000].values
+# ts = pd.read_csv('C:/Users/carle/OneDrive/Dokumente/GitHub/Recurrence_project/datasets/InnerRace_0.028.csv')['X059_DE_time'][0:250000].values
+# ts = pd.read_csv('C:/Users/carle/OneDrive/Dokumente/GitHub/Recurrence_project/datasets/Ball_0.028.csv')['X051_DE_time'][0:250000].values
+
+# ----------------------------
+
+print(ts)
+plt.plot(ts)
+plt.show()
+
+m = 5 # embedding dimension
+T = 3 # delay
 epsilon = 0.1 # threshold
 
-l = 200  # Window size
-delay = 5  # Delay before calculating next RP
+l = 500  # Window size
+delay = 50  # Delay before calculating next RP
 
 recurrence_plots = []
 rqa_measures = []
-for start in range(0, len(timeseries) - l + 1, delay):
-    window = timeseries[start:start + l]
-    rp = calcRP(window, m, T, epsilon)
+
+for start in range(0, len(ts) - l + 1, delay):
+    window = ts[start:start + l]
+    rp = calc_recurrence_plots(window, m, T, epsilon)
     recurrence_plots.append(rp)
-    rqa_metrics = calcRQAMeasures(rp)
+    rqa_metrics = calc_rqa_measures(rp)
     rqa_measures.append(rqa_metrics)
 
-plt.plot(timeseries)
+plot_rqa_measures(recurrence_plots, rqa_measures)
 plt.show()
 
-plot_rqa_measures(recurrence_plots, rqa_measures)
+# # labeling the recurrence plots
+# labels = np.zeros(int((len(ts)-l)/delay))
+# for i in range(0, len(recurrence_plots)-1):
+#     if any(spike_locations[i*5:i*5+200]):
+#         labels[i] = 1
 
-# Detect changes in RR, DET, LAM
-detected_points = detect_changes(rqa_measures)
-print("Detected points for RR:", detected_points['RR'])
-print("Detected points for DET:", detected_points['DET'])
-print("Detected points for LAM:", detected_points['LAM'])
+# thresholds = {'RR': 0.1, 'DET': 0.6,'LAM': 0.7, 'ENTR': 1.0, 'TT': 3.0}  
+# classifications = classify_recurrence_plots(rqa_measures, thresholds)
+
+# print(f"Classifications: {classifications}")
+# print(f"Labels: {labels}")
+
+
+
