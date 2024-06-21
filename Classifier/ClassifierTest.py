@@ -8,7 +8,7 @@ from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 
 # To-Do
-# 1. Fix TT RQA-measure
+# 1. Fix TT RQA-measure FIX IT
 # 2. Try differnt SVM setups
 # 3. implement SVM to classify fault type
 # 4. clean code 
