@@ -179,9 +179,9 @@ def carl(signal, m: int = 5, t: int = 1, epsilon: float = 0.1):
 def test3(signal: np.ndarray, m: int = 5, t: int = 1):
     old_length = signal.shape[0]
     new_length = old_length - (m - 1) * t
-    signal = signal.reshape(old_length, 1)
+    signal = signal.reshape((old_length, 1))
     my_distances = cdist(signal, signal, "euclidean")   # old_length x old_length
-    flat_distances = my_distances.reshape(1, old_length*old_length)
+    flat_distances = my_distances.reshape(-1)   # 1, old_length*old_length
     pattern_indices = np.arange(new_length)
     full_block_indices = np.concatenate([pattern_indices + i * old_length for i in range(new_length)])  # new_length x new_length
     # full_block_indices = np.concatenate([np.arange(i*old_length, i*old_length + new_length) for i in range(new_length)])

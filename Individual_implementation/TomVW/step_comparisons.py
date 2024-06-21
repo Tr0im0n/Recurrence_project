@@ -40,8 +40,8 @@ def hankel_chatgpt(signal: np.ndarray, m: int = 5, t: int = 1):
 def compare_hankel(n_samples: int = 10_000):
     # my_signal = composite_signal(n_samples, ((0.01, 4), (0.02, 2), (0.04, 1)))    # ((1, 4), (2, 2), (4, 1))
     funcs = [hankel,
-             # hankel_martina,
-             # hankel_carl,
+             hankel_martina,
+             hankel_carl,
              hankel_chatgpt]
     sizes = np.arange(100_000, 1_000_000, 100_000)
     signals = [composite_signal(size, ((0.01, 4), (0.02, 2), (0.04, 1))) for size in sizes]
@@ -49,7 +49,7 @@ def compare_hankel(n_samples: int = 10_000):
     durations = []
     time_obj = TimeObject()
     # initialize hankel
-    scipy.linalg.hankel(np.array([1, 2, 3, 4]))
+    # scipy.linalg.hankel(np.array([1, 2, 3, 4]))
 
     for func in funcs:
         # hankel_likes.append(func(my_signal))
@@ -126,8 +126,7 @@ def test3(signal: np.ndarray, m: int = 5, t: int = 1):
     return result.reshape((new_length, new_length))
 
 
-
-
 if __name__ == "__main__":
+    compare_hankel()
     compare_rp()
 
