@@ -244,17 +244,17 @@ def epsilon_slider():
     plt.show()
 
 
-def compare_all(n_samples: int = 1_000, m: int = 5):
+def compare_all(n_samples: int = 2_000, m: int = 5):
     my_signal = composite_signal(n_samples, ((0.01, 4), (0.02, 2), (0.04, 1)))    # ((1, 4), (2, 2), (4, 1))
     funcs = [hankel_pdist,
-             martina,
-             # hankel_kron_norm,
+             # martina,
+             hankel_kron_norm,
              # double_for_loop_hankel,
              # double_for_loop_length_matrix,
-             convolve_triangle_shift,
+             # convolve_triangle_shift,
              # convolve_diagonal,
              # carl,
-             # test3,
+             test3,
              view_cdist]
     rps = []
     time_obj = TimeObject()
