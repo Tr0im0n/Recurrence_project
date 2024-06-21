@@ -24,73 +24,86 @@ class dataTab:
         self.is_running = False
         self.data = np.array([])
 
-    def create_data_tab(self):
-        # set up layout
-        self.data_tab.columnconfigure(0, weight=1)
-        self.data_tab.columnconfigure(1, weight=1)
-        self.data_tab.rowconfigure(0, weight=1)
-        self.data_tab.rowconfigure(1, weight=1)
 
-        self.command_window_data = ttk.Frame(self.data_tab)
-        self.command_window_data.grid(row=0, column=0, columnspan=2, sticky='nsew')
+    def embedding_param_layout(self):
+        self.embedding_param_frame = ttk.Frame(self.inputs_frame)
+        self.embedding_param_frame.pack(side='left', padx=(0,10), anchor='c')
 
-        self.command_window_data.columnconfigure(0, weight=1)
-        self.command_window_data.columnconfigure(1, weight=1)
-        self.command_window_data.columnconfigure(2, weight=1)
-        self.command_window_data.columnconfigure(3, weight=1)
-
-        self.command_window_data.rowconfigure(0, weight=1)
-        self.command_window_data.rowconfigure(1, weight=1)
-        self.command_window_data.rowconfigure(2, weight=1)
-        self.command_window_data.rowconfigure(3, weight=1)
-
-        # set up figures
-        self.fig_data = plt.Figure()
-        self.fig_rp_data = plt.Figure()
-
-        self.canvas_comp_data = FigureCanvasTkAgg(self.fig_data, master=self.data_tab)
-        self.canvas_comp_data.get_tk_widget().grid(row=1, column=0, sticky='nsew')
-
-        self.canvas_rp_data = FigureCanvasTkAgg(self.fig_rp_data, master=self.data_tab)
-        self.canvas_rp_data.get_tk_widget().grid(row=1, column=1, sticky='nsew')
-
-        # configure command window
-        # general controls
-        self.btn_load_file = ttk.Button(self.command_window_data, text="Load CSV", command=self.load_csv_data)
-        self.btn_load_file.grid(row=0, column=0)
-
-        self.btn_run_data = ttk.Button(self.command_window_data, text="Run", command=self.run_data)
-        self.btn_run_data.grid(row=1, column=0)
-
-        self.btn_reset_data = ttk.Button(self.command_window_data, text="Reset", command=self.reset_data)
-        self.btn_reset_data.grid(row=2, column=0)
+        self.embedding_param_frame.columnconfigure(0,weight=1)
+        self.embedding_param_frame.columnconfigure(1, weight=3)
+        self.embedding_param_frame.columnconfigure(2, weight=1)
 
         # Inputs for embedding parameters
         self.embedding_dim_var = tk.IntVar(value=1)
         self.time_delay_var = tk.IntVar(value=1)
         self.threshold_var = tk.DoubleVar(value=0.1)
+        self.threshold_check_var = tk.BooleanVar(value=True)
 
-        self.embedding_dim_label = ttk.Label(self.command_window_data, text="Embedding Dimension (m):")
-        self.embedding_dim_label.grid(row=0, column=1, sticky='e')
-        self.embedding_dim_input = ttk.Entry(self.command_window_data, textvariable=self.embedding_dim_var)
-        self.embedding_dim_input.grid(row=0, column=2, sticky='w')
+        self.embedding_param_label = ttk.Label(self.embedding_param_frame, text='Embedding Parameters')
+        self.embedding_param_label.grid(row=0, column=0, columnspan=3)
+        self.embedding_dim_label = ttk.Label(self.embedding_param_frame, text='Embedding Dimension (m):')
+        self.embedding_dim_label.grid(row=1, column=0, padx=(10, 0), pady=(10))
+        self.time_delay_label = ttk.Label(self.embedding_param_frame, text='Time Delay (T):')
+        self.time_delay_label.grid(row=2, column=0, padx=(10, 0))
+        self.threshold_label = ttk.Label(self.embedding_param_frame, text='Threshold (e):')
+        self.threshold_label.grid(row=3, column=0, padx=(10, 0), pady=10)
 
-        self.time_delay_label = ttk.Label(self.command_window_data, text="Time Delay (T):")
-        self.time_delay_label.grid(row=1, column=1, sticky='e')
-        self.time_delay_input = ttk.Entry(self.command_window_data, textvariable=self.time_delay_var)
-        self.time_delay_input.grid(row=1, column=2, sticky='w')
+        self.embedding_dim_input = ttk.Entry(self.embedding_param_frame, textvariable=self.embedding_dim_var, width=5)
+        self.embedding_dim_input.grid(row=1, column=1, columnspan=2, sticky='ew', padx=10, pady=(10))
 
-        self.threshold_label = ttk.Label(self.command_window_data, text="Threshold (e):")
-        self.threshold_label.grid(row=2, column=1, sticky='e')
-        # check that threshold input value is decimal between 0 and 1
-        vcmd = (self.command_window_data.register(self.validate_threshold), '%P')
-        self.threshold_input = ttk.Entry(self.command_window_data, textvariable=self.threshold_var,
-                                              validate='focusout', validatecommand=vcmd)
-        self.threshold_input.grid(row=2, column=2, sticky='w')
+        self.time_delay_input = ttk.Entry(self.embedding_param_frame, textvariable=self.time_delay_var, width=5)
+        self.time_delay_input.grid(row=2, column=1, columnspan=2, sticky='ew', padx=10)
 
-        # RQA display
-        self.rqa_label_data = ttk.Label(self.command_window_data, text="RQA Measures will appear here")
-        self.rqa_label_data.grid(row=0, column=3, rowspan=2)
+        vcmd = (self.embedding_param_frame.register(self.validate_threshold), '%P')
+        self.threshold_input = ttk.Entry(self.embedding_param_frame, textvariable=self.threshold_var, width=5,
+                                         validate='focusout', validatecommand=vcmd)
+        self.threshold_input.grid(row=3, column=1, sticky='w', padx=(10, 0), pady=10)
+
+        self.threshold_check_button = ttk.Checkbutton(self.embedding_param_frame, text='threshold', variable=self.threshold_check_var)
+        self.threshold_check_button.grid(row=3,column=2, sticky='e', padx=(5,10), pady=10)
+
+    def general_controls_layout(self):
+        self.general_controls_frame = ttk.Frame(self.inputs_frame)
+        self.general_controls_frame.pack(side='left', padx=(0,10), anchor='c')
+
+        self.btn_load_file = ttk.Button(self.general_controls_frame, text="Load CSV", command=self.load_csv_data)
+        self.btn_load_file.pack(padx=10, fill='x')
+
+        self.btn_run_data = ttk.Button(self.general_controls_frame, text="Run", command=self.run_data)
+        self.btn_run_data.pack(padx=10, fill='x')
+
+        self.btn_reset_data = ttk.Button(self.general_controls_frame, text="Reset", command=self.reset_data)
+        self.btn_reset_data.pack(padx=10, fill='x')
+
+    def display_rqa_measures(self):
+        self.rqa_frame = ttk.Frame(self.inputs_frame)
+        self.rqa_frame.pack(side='left', anchor='c', padx=(0,10))
+
+        self.rqa_label = ttk.Label(self.rqa_frame, text="RQA Measures will appear here")
+        self.rqa_label.pack(pady=20)
+
+    def create_data_tab(self):
+        self.inputs_frame = ttk.Frame(self.data_tab)
+        self.inputs_frame.pack()
+
+        self.display_frame = ttk.Frame(self.data_tab)
+        self.display_frame.pack()
+
+        self.general_controls_layout()
+        self.embedding_param_layout()
+        self.display_rqa_measures()
+
+        # set up figures
+        self.fig_data = plt.Figure()
+        self.fig_rp_data = plt.Figure()
+
+        self.canvas_comp_data = FigureCanvasTkAgg(self.fig_data, master=self.display_frame)
+        self.canvas_comp_data.get_tk_widget().pack(side='left')
+
+        self.canvas_rp_data = FigureCanvasTkAgg(self.fig_rp_data, master=self.display_frame)
+        self.canvas_rp_data.get_tk_widget().pack(side='left')
+
+
 
     def load_csv_data(self):
         file_path = fd.askopenfilename(filetypes=[("CSV files", "*.csv")])
@@ -164,12 +177,12 @@ class dataTab:
         self.canvas_rp_data.draw()
 
         # calculate and display the RQA measures
-        rqa_measures_data = calculate_rqa_measures_pyrqa(vectors, epsilon)
+        rqa_measures_data = calculate_rqa_measures_pyrqa(vectors, m, T, epsilon)
         det2, lam2, lmax2 = calculate_manual_det_lam_lmax(recurrence_matrix)
         rqa_measures_data["DET2"] = det2
         rqa_measures_data["LAM2"] = lam2
         rqa_measures_data["Lmax2"] = lmax2
-        display_rqa_measures(self.rqa_label_data, rqa_measures_data)
+        display_rqa_measures(self.rqa_label, rqa_measures_data)
 
     def run_data(self):
         if not self.is_running:
