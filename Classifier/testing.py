@@ -81,7 +81,7 @@ def calc_rqa_measures(recurrence_matrix, min_line_length=2):
     LAM = sum(l for l in vert_lengths if l >= min_line_length) / np.sum(recurrence_matrix) if np.sum(recurrence_matrix) != 0 else 0
 
     # Calculate trapping time (TT)
-    TT = np.mean([l for l in vert_lengths if l >= min_line_length]) if vert_lengths else 0
+    # TT = np.mean([l for l in vert_lengths if l >= min_line_length]) if vert_lengths else 0
 
     # Calculate maximum length of vertical structures (Vmax)
     Vmax = max(vert_lengths) if vert_lengths else 0
@@ -94,7 +94,7 @@ def calc_rqa_measures(recurrence_matrix, min_line_length=2):
     # Ratio between DET and RR
     DET_RR = DET / RR if RR > 0 else 0
 
-    return {'RR': RR, 'DET': DET, 'LAM': LAM, 'DET_RR': DET_RR, 'L': L, 'TT': TT, 'DIV': DIV, 'ENTR': ENTR, 'TREND': TREND}
+    return {'RR': RR, 'DET': DET, 'LAM': LAM, 'DET_RR': DET_RR, 'L': L, 'DIV': DIV, 'ENTR': ENTR, 'TREND': TREND}
 
 def classify_recurrence_plots(rqa_measures, threshold_dict):
     classifications = []
@@ -109,22 +109,22 @@ def classify_recurrence_plots(rqa_measures, threshold_dict):
 
 # ----------------------------
 # Bearing Data Set
-ts = pd.read_csv('C:/Users/carle/OneDrive/Dokumente/GitHub/Recurrence_project/datasets/normal_3hp_1730rpm.csv')['X100_DE_time'][0:250000].values
-# ts = pd.read_csv('C:/Users/carle/OneDrive/Dokumente/GitHub/Recurrence_project/datasets/InnerRace_0.028.csv')['X059_DE_time'][0:250000].values
-# ts = pd.read_csv('C:/Users/carle/OneDrive/Dokumente/GitHub/Recurrence_project/datasets/Ball_0.028.csv')['X051_DE_time'][0:250000].values
+ts = pd.read_csv('Classifier/data/normal_3hp_1730rpm.csv')['X100_DE_time'][0:25000].values
+# ts = pd.read_csv('Classifier/data/InnerRace_0.028.csv')['X059_DE_time'][0:250000].values
+# ts = pd.read_csv('Classifier/data/Ball_0.028.csv')['X051_DE_time'][0:250000].values
 
 # ----------------------------
 
-print(ts)
-plt.plot(ts)
-plt.show()
+#print(ts)
+#plt.plot(ts)
+#plt.show()
 
-m = 5 # embedding dimension
-T = 3 # delay
+m = 4 # embedding dimension
+T = 2 # delay
 epsilon = 0.1 # threshold
 
 l = 500  # Window size
-delay = 50  # Delay before calculating next RP
+delay = 10  # Delay before calculating next RP
 
 recurrence_plots = []
 rqa_measures = []
@@ -136,8 +136,11 @@ for start in range(0, len(ts) - l + 1, delay):
     rqa_metrics = calc_rqa_measures(rp)
     rqa_measures.append(rqa_metrics)
 
-plot_rqa_measures(recurrence_plots, rqa_measures)
+plt.imshow(recurrence_plots[0], cmap='binary', origin='lower')
 plt.show()
+
+#plot_rqa_measures(recurrence_plots, rqa_measures)
+#plt.show()
 
 # # labeling the recurrence plots
 # labels = np.zeros(int((len(ts)-l)/delay))
