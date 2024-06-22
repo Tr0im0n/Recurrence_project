@@ -15,15 +15,14 @@ class dataTab:
         self.root = root
         self.notebook = notebook
 
-        # create data tab
-        self.data_tab = ttk.Frame(notebook)
-        notebook.add(self.data_tab, text='Plotting Data')
-        self.create_data_tab()
-
         # initialize variables
         self.is_running = False
         self.data = np.array([])
 
+        # create data tab
+        self.data_tab = ttk.Frame(notebook)
+        notebook.add(self.data_tab, text='Plotting Data')
+        self.create_data_tab()
 
     def embedding_param_layout(self):
         self.embedding_param_frame = ttk.Frame(self.inputs_frame)
@@ -76,11 +75,45 @@ class dataTab:
         self.btn_reset_data.pack(padx=10, fill='x')
 
     def display_rqa_measures(self):
+        rqa_measures = {
+            "RR": 'TBD',
+            "DET": 'TBD',
+            "L": 'TBD',
+            "Lmax": 'TBD',
+            "DIV": 'TBD',
+            "ENTR": 'TBD',
+            "LAM": 'TBD',
+            "TT": 'TBD'
+        }
+        # Destroy the previous frame if it exists
         self.rqa_frame = ttk.Frame(self.inputs_frame)
-        self.rqa_frame.pack(side='left', anchor='c', padx=(0,10))
+        self.rqa_frame.pack(side='left', padx=(0,10), anchor='c')
 
-        self.rqa_label = ttk.Label(self.rqa_frame, text="RQA Measures will appear here")
-        self.rqa_label.pack(pady=20)
+        self.rqa_table = tk.Frame(self.rqa_frame)
+        self.rqa_table.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+
+        # create the treeview
+        self.tree = ttk.Treeview(self.rqa_table, columns=("Measure", "Value"), show='headings', height=10)
+        self.tree.pack(fill=tk.BOTH, expand=True)
+
+        self.tree.heading("Measure", text="Measure")
+        self.tree.heading("Value", text="Value")
+
+        for measure, value in rqa_measures.items():
+            self.tree.insert("", "end", values=(measure, value))
+
+        # Configure the column width
+        self.tree.column("Measure", anchor=tk.CENTER, width=100)
+        self.tree.column("Value", anchor=tk.CENTER, width=100)
+
+    def update_rqa_table(self):
+        # Clear existing entries in the treeview
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+
+        # Insert the updated data into the treeview
+        for measure, value in self.rqa_measures.items():
+            self.tree.insert("", "end", values=(measure, value))
 
     def create_data_tab(self):
         self.inputs_frame = ttk.Frame(self.data_tab)
@@ -102,8 +135,6 @@ class dataTab:
 
         self.canvas_rp_data = FigureCanvasTkAgg(self.fig_rp_data, master=self.display_frame)
         self.canvas_rp_data.get_tk_widget().pack(side='left')
-
-
 
     def load_csv_data(self):
         file_path = fd.askopenfilename(filetypes=[("CSV files", "*.csv")])
@@ -155,8 +186,10 @@ class dataTab:
         self.D_norm = self.D / self.D_max
 
         # threshold similarity matrix to produce recurrence plot
-        recurrence_matrix = self.D_norm < epsilon
-        x_rec, y_rec = np.argwhere(recurrence_matrix).T
+        if self.threshold_check_var.get() == True:
+            recurrence_matrix = self.D_norm < epsilon
+        else:
+            recurrence_matrix = self.D_norm
 
         # plot the data
         self.fig_data.clear()
@@ -170,19 +203,15 @@ class dataTab:
         # plot the recurrence plot
         self.fig_rp_data.clear()
         ax_rp_data = self.fig_rp_data.add_subplot(111)
-        ax_rp_data.scatter(x_rec, y_rec, s=1)
+        ax_rp_data.imshow(recurrence_matrix, cmap='binary', origin='lower')
         ax_rp_data.set_title("Recurrence Plot")
         ax_rp_data.set_xlabel("Vector Index")
         ax_rp_data.set_ylabel("Vector Index")
         self.canvas_rp_data.draw()
 
         # calculate and display the RQA measures
-        rqa_measures_data = calculate_rqa_measures_pyrqa(vectors, m, T, epsilon)
-        det2, lam2, lmax2 = calculate_manual_det_lam_lmax(recurrence_matrix)
-        rqa_measures_data["DET2"] = det2
-        rqa_measures_data["LAM2"] = lam2
-        rqa_measures_data["Lmax2"] = lmax2
-        display_rqa_measures(self.rqa_label, rqa_measures_data)
+        self.rqa_measures = calculate_rqa_measures_pyrqa(vectors, m, T, epsilon)
+        self.update_rqa_table()
 
     def run_data(self):
         if not self.is_running:

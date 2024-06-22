@@ -27,6 +27,7 @@ class homeTab:
                                                        "the live plotting of selected functions and see the "
                                                        "recurrence quantification analysis (RQA) measures.",
                                    font=("Helvetica", 18),
+                                   anchor='center'
                                    )
         self.info_text.pack()
 

@@ -14,6 +14,7 @@ class LivePlotApp:
         # window set up
         self.root = root
         self.root.title("Live Data and Recurrence Plot")
+        self.root.configure(bg='white')
 
         # tab set up
         self.notebook = ttk.Notebook(root)

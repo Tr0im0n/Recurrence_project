@@ -18,19 +18,34 @@ class funcTab:
         self.root = root
         self.notebook = notebook
 
-        # create function tab
-        self.function_tab = ttk.Frame(notebook)
-        notebook.add(self.function_tab, text='Plotting Functions')
-        self.create_functions_tab()
+        # set styling
+        self.style = ttk.Style()
+        self.style.configure('TFrame', background='white')
 
         # Initialize variables
         self.is_running = False
         self.dt = 0.01
         self.xyzs = np.array([])
 
+        self.rqa_measures = {
+            "RR": 'TBD',
+            "DET": 'TBD',
+            "L": 'TBD',
+            "Lmax": 'TBD',
+            "DIV": 'TBD',
+            "ENTR": 'TBD',
+            "LAM": 'TBD',
+            "TT": 'TBD'
+        }
+
+        # create function tab
+        self.function_tab = tk.Frame(notebook)
+        notebook.add(self.function_tab, text='Plotting Functions')
+        self.create_functions_tab()
+
     def embedding_param_layout(self):
         self.embedding_param_frame = ttk.Frame(self.command_window_frame_top)
-        self.embedding_param_frame.pack(side='left', padx=(0,10), anchor='n')
+        self.embedding_param_frame.pack(side='left', padx=(0,10), anchor='c')
 
         self.embedding_param_frame.columnconfigure(0,weight=1)
         self.embedding_param_frame.columnconfigure(1, weight=3)
@@ -67,7 +82,7 @@ class funcTab:
 
     def init_cond_layout(self):
         self.init_cond_frame = ttk.Frame(self.command_window_frame_top)
-        self.init_cond_frame.pack(side='left', padx=(0,10), anchor='n')
+        self.init_cond_frame.pack(side='left', padx=(0,10), anchor='c')
 
         self.init_cond_frame.columnconfigure(0, weight=1)
         self.init_cond_frame.columnconfigure(1, weight=8)
@@ -163,25 +178,39 @@ class funcTab:
                                               command=self.reset_func, variable=self.check_var_CRP)
         self.check_button_CRP.pack(side='left', padx=10)
 
-
     def display_rqa_measures(self):
         self.rqa_frame = ttk.Frame(self.function_tab)
         self.rqa_frame.place(relx=0.4, rely=0, relheight=0.45, relwidth=0.16)
 
-        self.rqa_label_func = ttk.Label(self.rqa_frame, text="RQA Measures will appear here")
-        self.rqa_label_func.pack(pady=20)
+        self.rqa_table = tk.Frame(self.rqa_frame)
+        self.rqa_table.pack(padx=10, pady=10, fill=tk.BOTH, expand=True)
+
+        # create the treeview
+        self.tree = ttk.Treeview(self.rqa_table, columns=("Measure", "Value"), show='headings', height=10)
+        self.tree.pack(fill=tk.BOTH, expand=True)
+
+        self.tree.heading("Measure", text="Measure")
+        self.tree.heading("Value", text="Value")
+
+        for measure, value in self.rqa_measures.items():
+            self.tree.insert("", "end", values=(measure, value))
+
+        # Configure the column width
+        self.tree.column("Measure", anchor=tk.CENTER, width=100)
+        self.tree.column("Value", anchor=tk.CENTER, width=100)
+
 
     def create_functions_tab(self):
         # set up figures
         self.ps_plot_frame = ttk.Frame(self.function_tab)
-        self.ps_plot_frame.place(relx=0.5, rely=0, relwidth=0.5, relheight=0.5)
+        self.ps_plot_frame.place(relx=0.5, rely=0, relwidth=0.5, relheight=0.45)
 
         self.fig_ps_func = plt.Figure()
         self.fig_comp_func = plt.Figure()
         self.fig_rp_func = plt.Figure()
 
         self.canvas_ps_func = FigureCanvasTkAgg(self.fig_ps_func, master=self.ps_plot_frame)
-        self.canvas_ps_func.get_tk_widget().pack(pady=10)
+        self.canvas_ps_func.get_tk_widget().pack(fill='both', expand=True)
 
         self.canvas_comp_func = FigureCanvasTkAgg(self.fig_comp_func, master=self.function_tab)
         self.canvas_comp_func.get_tk_widget().place(relx=0, rely=0.45, relwidth=0.5, relheight=0.55)
@@ -302,6 +331,7 @@ class funcTab:
             # calculates recurrence plot
             recurrence_matrix = self.calculate_recurrence_plot(self.x)
             self.calculate_rqa(recurrence_matrix)
+            print(self.rqa_measures)
             self.update_recurrence_plot_figure(recurrence_matrix, 'Recurrence')
 
         elif sum(self.coord_active) == 2 and self.check_var_CRP.get():  # multivariate joint recurrence plot
@@ -442,12 +472,13 @@ class funcTab:
         ax_rp_func.set_ylabel("Vector Index")
 
     def calculate_rqa(self, recurrence_matrix):
-        rqa_measures_func = calculate_rqa_measures_pyrqa(self.vectors, self.m, self.T, self.epsilon)
-        det2, lam2, lmax2 = calculate_manual_det_lam_lmax(recurrence_matrix)
-        rqa_measures_func["DET2"] = det2
-        rqa_measures_func["LAM2"] = lam2
-        rqa_measures_func["Lmax2"] = lmax2
-        display_rqa_measures(self.rqa_label_func, rqa_measures_func)
+        self.rqa_measures = calculate_rqa_measures_pyrqa(self.vectors, self.m, self.T, self.epsilon)
+        self.display_rqa_measures()
+        # det2, lam2, lmax2 = calculate_manual_det_lam_lmax(recurrence_matrix)
+        # rqa_measures["DET2"] = det2
+        # rqa_measures["LAM2"] = lam2
+        # rqa_measures["Lmax2"] = lmax2
+        # self.display_rqa_measures(rqa_measures)
 
     def start_func(self):
         if not self.is_running:
