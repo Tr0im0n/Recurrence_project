@@ -23,7 +23,7 @@ def main():
     ball_fault = load_data(ball_fault_path, 'X051_DE_time', num_samples)
 
     # Feature extraction
-    feature_func = lambda data: calc_rqa_measures(calc_recurrence_plots(data, m, T, epsilon))
+    feature_func = lambda data: calc_rqa_measures(calc_recurrence_plots(data, m, T, epsilon, use_fnn=False))
 
     # Prepare datasets
     faulty = [inner_race_fault, ball_fault]
