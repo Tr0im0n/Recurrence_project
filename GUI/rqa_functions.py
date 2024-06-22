@@ -7,8 +7,9 @@ from pyrqa.computation import RQAComputation
 from pyrqa.metric import EuclideanMetric
 from pyrqa.neighbourhood import FixedRadius
 
-def calculate_rqa_measures_pyrqa(vectors, epsilon):
-    time_series = TimeSeries(vectors[:, 0], embedding_dimension=1, time_delay=1)
+
+def calculate_rqa_measures_pyrqa(vectors, m, T, epsilon):
+    time_series = TimeSeries(vectors[:, 0], embedding_dimension=m, time_delay=T)
     settings = Settings(
         time_series,
         neighbourhood=FixedRadius(epsilon),
@@ -20,14 +21,14 @@ def calculate_rqa_measures_pyrqa(vectors, epsilon):
     result = computation.run()
 
     rqa_measures = {
-        "RR": result.recurrence_rate,
-        "DET": result.determinism,
-        "L": result.average_diagonal_line,
-        "Lmax": result.longest_diagonal_line,
-        "DIV": result.divergence,
-        "ENTR": result.entropy_diagonal_lines,
-        "LAM": result.laminarity,
-        "TT": result.trapping_time
+        "RR": round(result.recurrence_rate, 3),
+        "DET": round(result.determinism, 3),
+        "L": round(result.average_diagonal_line, 3),
+        "Lmax": round(result.longest_diagonal_line, 3),
+        "DIV": round(result.divergence, 3),
+        "ENTR": round(result.entropy_diagonal_lines, 3),
+        "LAM": round(result.laminarity, 3),
+        "TT": round(result.trapping_time, 3)
     }
 
     return rqa_measures
@@ -63,9 +64,10 @@ def calculate_manual_det_lam_lmax(recurrence_matrix):
 
     return det2, lam2, lmax2
 
-def display_rqa_measures(rqa_label, rqa_measures):
-    text = "\n".join([f"{k}: {v:.4f}" for k, v in rqa_measures.items()])
-    rqa_label.config(text=text)
+# def display_rqa_measures(rqa_label, rqa_measures):
+#     text = "\n".join([f"{k}: {v:.4f}" for k, v in rqa_measures.items()])
+#     rqa_label.config(text=text)
+
 
 def extract_diagonal_lengths(recurrence_matrix):
     num_points = recurrence_matrix.shape[0]
