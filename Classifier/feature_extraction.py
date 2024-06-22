@@ -24,4 +24,23 @@ def calc_rqa_measures(recurrence_matrix, min_line_length=2):
     counts = np.bincount(diag_lengths)
     probs = counts / np.sum(counts) if np.sum(counts) > 0 else np.zeros_like(counts)
     ENTR = -np.sum(p * np.log2(p) for p in probs if p > 0)
-    return {'RR': RR, 'DET': DET, 'L': L, 'Lmax': Lmax, 'DIV': DIV, 'ENTR': ENTR}
+    vertical_lengths = []
+    for j in range(recurrence_matrix.shape[1]):  # For each column in the matrix
+        column = recurrence_matrix[:, j]
+        vertical_lengths.extend(get_vertical_line_lengths(column))
+    
+    TT = np.mean(vertical_lengths) if vertical_lengths else 0  # Calculate the average if not empty
+    return {'RR': RR, 'DET': DET, 'L': L, 'TT': TT, 'Lmax': Lmax, 'DIV': DIV, 'ENTR': ENTR}
+
+def get_vertical_line_lengths(column):
+    lengths = []
+    current_length = 0
+    for value in column:
+        if value == 1:
+            current_length += 1
+        elif current_length > 0:
+            lengths.append(current_length)
+            current_length = 0
+    if current_length > 0:
+        lengths.append(current_length)
+    return lengths
