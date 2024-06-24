@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 # Load the .mat file
-file_path = r"C:\Users\akash\Downloads\100.mat"
+file_path = r"C:\Users\akash\Downloads\DataForClassification_TimeDomain.mat"
 data = loadmat(file_path)
 
 # Filter out the metadata and keep only the data entries
@@ -27,7 +27,7 @@ for k, v in data.items():
 df = pd.DataFrame(data_for_df)
 
 # Save the DataFrame to a CSV file
-output_csv_path = "example.csv"
+output_csv_path = "gearvibrations.csv"
 df.to_csv(output_csv_path, index=False)
 
 print(f"Data has been successfully saved to {output_csv_path}")
