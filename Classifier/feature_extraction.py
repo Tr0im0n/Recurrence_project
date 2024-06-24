@@ -24,18 +24,24 @@ def calc_rqa_measures(recurrence_matrix, min_line_length=2):
     diag_lengths = [len(list(group)) for diag in diagonals for k, group in groupby(diag) if k == 1]
     DET = sum(l for l in diag_lengths if l >= min_line_length) / np.sum(recurrence_matrix) if np.sum(recurrence_matrix) != 0 else 0
     L = np.mean([l for l in diag_lengths if l >= min_line_length]) if diag_lengths else 0
+
     Lmax = max(diag_lengths) if diag_lengths else 0
     DIV = 1 / Lmax if Lmax != 0 else 0
+    # ENTR
     counts = np.bincount(diag_lengths)
     probs = counts / np.sum(counts) if np.sum(counts) > 0 else np.zeros_like(counts)
     ENTR = -np.sum(p * np.log2(p) for p in probs if p > 0)
+    # TT
     vertical_lengths = []
     for j in range(recurrence_matrix.shape[1]):  # For each column in the matrix
         column = recurrence_matrix[:, j]
         vertical_lengths.extend(get_vertical_line_lengths(column))
-
     TT = np.mean(vertical_lengths) if vertical_lengths else 0  # Calculate the average if not empty
-    return {'RR': RR, 'DET': DET, 'L': L, 'TT': TT, 'Lmax': Lmax, 'DIV': DIV, 'ENTR': ENTR}
+    # Calculate laminarity (LAM)
+    verticals = [recurrence_matrix[:, i] for i in range(time_series_length)]
+    vert_lengths = [len(list(group)) for vert in verticals for k, group in groupby(vert) if k == 1]
+    LAM = sum(l for l in vert_lengths if l >= min_line_length) / np.sum(recurrence_matrix) if np.sum(recurrence_matrix) != 0 else 0
+    return {'RR': RR, 'DET': DET, 'L': L, 'TT': TT, 'Lmax': Lmax, 'DIV': DIV, 'ENTR': ENTR, 'LAM': LAM}
 
 def get_vertical_line_lengths(column):
     lengths = []

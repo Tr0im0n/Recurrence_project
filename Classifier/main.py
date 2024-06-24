@@ -6,12 +6,12 @@ from classifier import train_classifier, predict, evaluate_accuracy
 
 def main():
     # Constants
-    m = 5  # Embedding dimension
+    m = 10 # Embedding dimension
     T = 2  # Delay
     epsilon = 0.1  # Threshold, % of largest distance vec
-    l = 100  # Window size
-    delay = 10  # Delay before calculating next RP
-    num_samples = 25000  # Number of samples to load
+    l = 1000  # Window size
+    delay = 100  # Delay before calculating next RP
+    num_samples = 75000  # Number of samples to load
 
     # Load data
     healthy_data_path = 'Classifier/data/normal_3hp_1730rpm.csv'
