@@ -19,14 +19,14 @@ def prepare_datasets(healthy, faulty, window_size, delay, feature_func):
     healthy_measures = np.apply_along_axis(feature_func, 1, healthy_windows)
     
     # Print healthy data feature shapes
-    print(f'Healthy data feature shape: {healthy_measures.shape}')
+    # print(f'Healthy data feature shape: {healthy_measures.shape}')
     
     # Create features for faulty data
     faulty_windows = np.concatenate([sliding_window_view(fault, window_size, delay) for fault in faulty])
     faulty_measures = np.apply_along_axis(feature_func, 1, faulty_windows)
     
     # Print faulty data feature shapes
-    print(f'Faulty data feature shape: {faulty_measures.shape}')
+    # print(f'Faulty data feature shape: {faulty_measures.shape}')
     
     # Balance the dataset sizes
     min_size = min(len(healthy_measures), len(faulty_measures))
@@ -51,14 +51,14 @@ def prepare_datasets(healthy, faulty, window_size, delay, feature_func):
     y = y[shuffle_indices]
     
     # Print combined dataset shapes
-    print(f'Combined dataset shape: {X.shape}')
+    # print(f'Combined dataset shape: {X.shape}')
     
     # Split into training and testing sets
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
     # Print training and testing set shapes
-    print(f'Training set shape: {X_train.shape}')
-    print(f'Testing set shape: {X_test.shape}')
+    # print(f'Training set shape: {X_train.shape}')
+    # print(f'Testing set shape: {X_test.shape}')
     
     return X_train, X_test, y_train, y_test
 

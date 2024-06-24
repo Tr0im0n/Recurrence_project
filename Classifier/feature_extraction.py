@@ -67,19 +67,6 @@ def calc_rqa_measures(recurrence_matrix, min_line_length=2):
     TT = np.mean(valid_vertical_lengths) if len(valid_vertical_lengths) > 0 else 0
     return np.array([RR, DET, L, TT, Lmax, DIV, ENTR, LAM])
 
-def get_vertical_line_lengths(column):
-    lengths = []
-    current_length = 0
-    for value in column:
-        if value == 1:
-            current_length += 1
-        elif current_length > 0:
-            lengths.append(current_length)
-            current_length = 0
-    if current_length > 0:
-        lengths.append(current_length)
-    return lengths
-
 def false_nearest_neighbors(timeseries, max_dim: int = 15, T=1, Rtol=10.0, Atol=2.0):
     n = len(timeseries)
 
