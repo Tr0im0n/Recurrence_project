@@ -1,7 +1,7 @@
 
 import numpy as np
 from preprocessing import load_data, prepare_datasets_bi_class, prepare_datasets_multi_class, scale_features
-from feature_extraction import calc_recurrence_plots, calc_rqa_measures
+from feature_extraction import calc_recurrence_plot, calc_rqa_measures
 from classifier import train_svm, train_binary_classifier, train_multiclass_classifier, predict, evaluate_accuracy
 
 def main():
@@ -24,7 +24,7 @@ def main():
     ball_fault = load_data(ball_fault_path, 'X051_DE_time', num_samples)
 
     # Feature extraction
-    feature_func = lambda data: calc_rqa_measures(calc_recurrence_plots(data, m, T, epsilon, use_fnn=False))
+    feature_func = lambda data: calc_rqa_measures(calc_recurrence_plot(data, m, T, epsilon, use_fnn=False))
 
     if use_multiclass:
         X_train, X_test, y_train, y_test = prepare_datasets_multi_class(healthy, race_fault, ball_fault, l, delay, feature_func)
