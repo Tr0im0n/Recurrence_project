@@ -6,7 +6,7 @@ from classifier import train_svm, train_binary_classifier, train_multiclass_clas
 
 def main():
     # Constants
-    m = 10 # Embedding dimension
+    m = 3 # Embedding dimension
     T = 2  # Delay
     epsilon = 0.1  # Threshold, % of largest distance vec
     l = 1000  # Window size
