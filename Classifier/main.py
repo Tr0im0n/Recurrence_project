@@ -11,7 +11,7 @@ def main():
     epsilon = 0.1  # Threshold, % of largest distance vec
     l = 1000  # Window size
     delay = 100  # Delay before calculating next RP
-    num_samples = 75000  # Number of samples to load
+    num_samples = 50000  # Number of samples to load
 
     # Load data
     healthy_data_path = 'Classifier/data/normal_3hp_1730rpm.csv'

@@ -3,6 +3,7 @@ import numpy as np
 from scipy.spatial.distance import pdist, squareform
 from itertools import groupby
 from sklearn.neighbors import NearestNeighbors
+from scipy.stats import entropy
 
 def calc_recurrence_plots(timeseries, m, T, epsilon, use_fnn=False):
     if use_fnn:
@@ -19,42 +20,52 @@ def calc_recurrence_plots(timeseries, m, T, epsilon, use_fnn=False):
 
 def calc_rqa_measures(recurrence_matrix, min_line_length=2):
     time_series_length = recurrence_matrix.shape[0]
-    RR = np.sum(recurrence_matrix) / (time_series_length ** 2)
-    diagonals = [np.diag(recurrence_matrix, k) for k in range(-time_series_length + 1, time_series_length)]
-    diag_lengths = [len(list(group)) for diag in diagonals for k, group in groupby(diag) if k == 1]
-    DET = sum(l for l in diag_lengths if l >= min_line_length) / np.sum(recurrence_matrix) if np.sum(recurrence_matrix) != 0 else 0
-    L = np.mean([l for l in diag_lengths if l >= min_line_length]) if diag_lengths else 0
-
-    Lmax = max(diag_lengths) if diag_lengths else 0
+    
+    # Recurrence Rate (RR)
+    RR = np.mean(recurrence_matrix)
+    
+    # Extract diagonal lines
+    diags = [np.diag(recurrence_matrix, k) for k in range(-time_series_length + 1, time_series_length)]
+    
+    # Calculate lengths of diagonal lines
+    diag_lengths = np.concatenate([np.diff(np.where(np.concatenate(([d[0]],d,[-1])))[0])[::2] for d in diags])
+    
+    # Filter diagonal lines by minimum length
+    valid_diag_lengths = diag_lengths[diag_lengths >= min_line_length]
+    
+    # Determinism (DET)
+    DET = np.sum(valid_diag_lengths) / np.sum(recurrence_matrix) if np.sum(recurrence_matrix) != 0 else 0
+    
+    # Average diagonal line length (L)
+    L = np.mean(valid_diag_lengths) if len(valid_diag_lengths) > 0 else 0
+    
+    # Longest diagonal line (Lmax)
+    Lmax = np.max(diag_lengths) if len(diag_lengths) > 0 else 0
+    
+    # Divergence (DIV)
     DIV = 1 / Lmax if Lmax != 0 else 0
-    # ENTR
-    counts = np.bincount(diag_lengths)
-    probs = counts / np.sum(counts) if np.sum(counts) > 0 else np.zeros_like(counts)
-    ENTR = -np.sum(p * np.log2(p) for p in probs if p > 0)
-    # TT
+    
+    # Entropy of diagonal line lengths (ENTR)
+    if len(valid_diag_lengths) > 0:
+        unique, counts = np.unique(valid_diag_lengths, return_counts=True)
+        ENTR = entropy(counts)
+    else:
+        ENTR = 0
+    
+    # Laminarity (LAM) and Trapping Time (TT)
     vertical_lengths = []
-    for j in range(recurrence_matrix.shape[1]):  # For each column in the matrix
-        column = recurrence_matrix[:, j]
-        vertical_lengths.extend(get_vertical_line_lengths(column))
-    TT = np.mean(vertical_lengths) if vertical_lengths else 0  # Calculate the average if not empty
-    # Calculate laminarity (LAM)
-    verticals = [recurrence_matrix[:, i] for i in range(time_series_length)]
-    vert_lengths = [len(list(group)) for vert in verticals for k, group in groupby(vert) if k == 1]
-    LAM = sum(l for l in vert_lengths if l >= min_line_length) / np.sum(recurrence_matrix) if np.sum(recurrence_matrix) != 0 else 0
-    return {'RR': RR, 'DET': DET, 'L': L, 'TT': TT, 'Lmax': Lmax, 'DIV': DIV, 'ENTR': ENTR, 'LAM': LAM}
-
-def get_vertical_line_lengths(column):
-    lengths = []
-    current_length = 0
-    for value in column:
-        if value == 1:
-            current_length += 1
-        elif current_length > 0:
-            lengths.append(current_length)
-            current_length = 0
-    if current_length > 0:
-        lengths.append(current_length)
-    return lengths
+    for col in range(time_series_length):
+        v_lines = np.diff(np.where(np.concatenate(([recurrence_matrix[0, col]],
+                                                   recurrence_matrix[:, col],
+                                                   [not recurrence_matrix[-1, col]])))[0])[::2]
+        vertical_lengths.extend(v_lines)
+    
+    vertical_lengths = np.array(vertical_lengths)
+    valid_vertical_lengths = vertical_lengths[vertical_lengths >= min_line_length]
+    
+    LAM = np.sum(valid_vertical_lengths) / np.sum(recurrence_matrix) if np.sum(recurrence_matrix) != 0 else 0
+    TT = np.mean(valid_vertical_lengths) if len(valid_vertical_lengths) > 0 else 0
+    return np.array([RR, DET, L, TT, Lmax, DIV, ENTR, LAM])
 
 def false_nearest_neighbors(timeseries, max_dim: int = 15, T=1, Rtol=10.0, Atol=2.0):
     n = len(timeseries)
