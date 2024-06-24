@@ -297,14 +297,15 @@ def compare_all(n_samples: int = 4_000, m: int = 5):
     plt.show()
 
 
-def view_cdist_vs_time(max_samples: int = 6_000, m: int = 5):
+def view_cdist_vs_time(max_samples: int = 8_000, m: int = 5):
     my_signal = composite_signal(max_samples, ((0.01, 4), (0.02, 2), (0.04, 1)))    # ((1, 4), (2, 2), (4, 1))
     rps = []
-    sizes = np.arange(4_000, max_samples+1, 100)
+    sizes = np.arange(4_000, max_samples+1, 500)
     time_obj = TimeObject()
     for size in sizes:
         for func in (stride_cdist, view_cdist):
-            rps.append(func(my_signal[:size], m))
+            # rps.append(func(my_signal[:size], m))
+            func(my_signal[:size], m)
             time_obj.new("")
 
     # my_len = int(len(time_obj.time_list)/2)
