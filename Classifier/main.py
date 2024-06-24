@@ -2,7 +2,7 @@
 import numpy as np
 from preprocessing import load_data, prepare_datasets, scale_features
 from feature_extraction import calc_recurrence_plots, calc_rqa_measures
-from classifier import train_classifier, predict, evaluate_accuracy
+from classifier import train_svm, train_binary_classifier, train_multiclass_classifier, predict, evaluate_accuracy
 
 def main():
     # Constants
@@ -12,6 +12,7 @@ def main():
     l = 1000  # Window size
     delay = 100  # Delay before calculating next RP
     num_samples = 50000  # Number of samples to load
+    use_multiclass = False
 
     # Load data
     healthy_data_path = 'Classifier/data/normal_3hp_1730rpm.csv'
@@ -32,8 +33,10 @@ def main():
     # Scale features
     X_train_scaled, X_test_scaled = scale_features(X_train, X_test)
 
-    # Train classifier
-    classifier = train_classifier(X_train_scaled, y_train)
+    if use_multiclass:
+        classifier = train_multiclass_classifier(X_train_scaled, y_train)
+    else:
+        classifier = train_binary_classifier(X_train_scaled, y_train)
 
     # Predict and evaluate
     predictions = predict(classifier, X_test_scaled)
