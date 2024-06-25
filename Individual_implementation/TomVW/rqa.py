@@ -56,7 +56,7 @@ axs_flat = ax1, ax2, ax3, ax4, ax5, ax6
 
 custom_range = [1, 2, 3, 5, 6, 7]
 for i, ax in zip(custom_range, axs_flat):
-    for j, rqa in enumerate(test1):
+    for j, rqa in enumerate(test1[:2]):
         ax.scatter(rqa[:, 0], rqa[:, i], s=4, label=b_list[j])
     ax.set_xlabel(a_list[0])
     ax.set_ylabel(a_list[i])
