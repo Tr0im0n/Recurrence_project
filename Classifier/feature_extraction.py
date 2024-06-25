@@ -1,18 +1,18 @@
 
 import numpy as np
-from scipy.spatial.distance import pdist, squareform
+from scipy.spatial.distance import pdist, squareform, cdist
 from itertools import groupby
 from sklearn.neighbors import NearestNeighbors
 from scipy.stats import entropy
 
-def calc_recurrence_plots(timeseries, m, T, epsilon, use_fnn=False):
+def calc_recurrence_plot(timeseries: np.ndarray, m: int, t: int, epsilon: float = 0.1, use_fnn: bool = False):
     if use_fnn:
         m = false_nearest_neighbors(timeseries)
         print(f"Estimated embedding dimension m using FNN: {m}")
-
-    num_vectors = len(timeseries) - (m - 1) * T
-    vectors = np.array([timeseries[i:i + m*T:T] for i in range(num_vectors)])
-    distance_matrix = squareform(pdist(vectors, metric='euclidean'))
+    new_shape = timeseries.shape[0] - (m - 1) * t
+    indices = np.arange(new_shape)[:, None] + np.arange(0, m * t, t)    # new_shape x m
+    result = timeseries[indices]    # just a view
+    distance_matrix = cdist(result, result, metric='euclidean')    # new_shape x new_shape
     max_distance = np.max(distance_matrix)
     normalized_distance_matrix = distance_matrix / max_distance if max_distance > 0 else distance_matrix
     recurrence_matrix = (normalized_distance_matrix <= epsilon).astype(int)
@@ -101,3 +101,55 @@ def false_nearest_neighbors(timeseries, max_dim: int = 15, T=1, Rtol=10.0, Atol=
             return d  # Return the current dimension as the minimum
 
     return -1  # Return -1 if no suitable dimension is found
+
+
+def false_nearest_neighbors2(series, max_dim, tau):
+    num_points = len(series)
+
+    # Initialize arrays to store results
+    fnn_ratios = np.zeros(max_dim - 1)
+
+    for m in range(1, max_dim):
+        # Time delay embedding
+        X_embedded = np.asarray([series[i:i + m] for i in range(num_points - (m - 1) * tau)])
+
+        # Calculate distances in embedded space
+        nbrs = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(X_embedded)
+        distances, _ = nbrs.kneighbors(X_embedded)
+
+        # Calculate Euclidean distances
+        dist1 = distances[:, 1]  # distance to the nearest neighbor in embedded space
+        dist_original = np.abs(series[:len(dist1)] - series[m * tau:])  # distance in original space
+
+        # Compute the ratio of distances
+        ratio = dist1 / dist_original
+
+        # Count false nearest neighbors
+        fnn_count = np.sum(ratio > 15)  # threshold for false nearest neighbors
+
+        # Calculate ratio of false nearest neighbors
+        fnn_ratio = fnn_count / len(series)
+
+        # Store the ratio for this embedding dimension
+        fnn_ratios[m - 1] = fnn_ratio
+
+    return fnn_ratios
+
+
+def test1():
+    # Example usage
+    # Generate a sample time series
+    np.random.seed(0)
+    time_series = np.cumsum(np.random.randn(1000))
+
+    # Parameters
+    max_dim = 10  # maximum embedding dimension to check
+    tau = 1  # time delay
+
+    # Compute false nearest neighbor ratios
+    fnn_ratios = false_nearest_neighbors(time_series, max_dim, tau)
+
+    # Print the results
+    print("False nearest neighbor ratios:")
+    for m in range(1, max_dim):
+        print(f"Dimension {m}: {fnn_ratios[m - 1]}")

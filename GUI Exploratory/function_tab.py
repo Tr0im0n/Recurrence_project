@@ -45,7 +45,7 @@ class funcTab:
 
     def embedding_param_layout(self):
         self.embedding_param_frame = ttk.Frame(self.command_window_frame_top)
-        self.embedding_param_frame.pack(side='left', padx=(0,10), anchor='c')
+        self.embedding_param_frame.pack(side='left', padx=20, anchor='c', expand=True, fill='x')
 
         self.embedding_param_frame.columnconfigure(0,weight=1)
         self.embedding_param_frame.columnconfigure(1, weight=3)
@@ -66,23 +66,26 @@ class funcTab:
         self.threshold_var = tk.DoubleVar(value=0.1)
         self.threshold_check_var = tk.BooleanVar(value=True)
 
-        self.embedding_dim_input = ttk.Entry(self.embedding_param_frame, textvariable=self.embedding_dim_var, width=5)
+        vcmd_param = (self.embedding_param_frame.register(self.validate_parameter), '%P')
+        self.embedding_dim_input = ttk.Entry(self.embedding_param_frame, textvariable=self.embedding_dim_var, width=5,
+                                             validate='focusout', validatecommand=vcmd_param)
         self.embedding_dim_input.grid(row=1, column=1, columnspan=2, sticky='ew', padx=10, pady=(0, 10))
 
-        self.time_delay_input = ttk.Entry(self.embedding_param_frame, textvariable=self.time_delay_var, width=5)
+        self.time_delay_input = ttk.Entry(self.embedding_param_frame, textvariable=self.time_delay_var, width=5,
+                                          validate='focusout', validatecommand=vcmd_param)
         self.time_delay_input.grid(row=2, column=1, columnspan=2, sticky='ew', padx=10)
 
-        vcmd = (self.embedding_param_frame.register(self.validate_threshold), '%P')
+        vcmd_thresh = (self.embedding_param_frame.register(self.validate_threshold), '%P')
         self.threshold_input = ttk.Entry(self.embedding_param_frame, textvariable=self.threshold_var, width=5,
-                                         validate='focusout', validatecommand=vcmd)
+                                         validate='focusout', validatecommand=vcmd_thresh)
         self.threshold_input.grid(row=3, column=1, sticky='w', padx=(10, 0), pady=10)
 
         self.threshold_check_button = ttk.Checkbutton(self.embedding_param_frame, text='threshold', variable=self.threshold_check_var)
-        self.threshold_check_button.grid(row=3,column=2, sticky='e', padx=(5,10), pady=10)
+        self.threshold_check_button.grid(row=3,column=2, sticky='e', padx=(0,10), pady=10)
 
     def init_cond_layout(self):
         self.init_cond_frame = ttk.Frame(self.command_window_frame_top)
-        self.init_cond_frame.pack(side='left', padx=(0,10), anchor='c')
+        self.init_cond_frame.pack(side='left', padx=(0,20), anchor='c', expand=True, fill='x')
 
         self.init_cond_frame.columnconfigure(0, weight=1)
         self.init_cond_frame.columnconfigure(1, weight=8)
@@ -97,36 +100,43 @@ class funcTab:
         self.init_cond_z_label = ttk.Label(self.init_cond_frame, text='Z:')
         self.init_cond_z_label.grid(row=3, column=0, padx=(10, 0), pady=(0, 10))
 
-        self.init_cond_x_var = tk.IntVar(value=1)
-        self.init_cond_y_var = tk.IntVar(value=1)
-        self.init_cond_z_var = tk.IntVar(value=1)
+        self.init_cond_x_var = tk.DoubleVar(value=1)
+        self.init_cond_y_var = tk.DoubleVar(value=1)
+        self.init_cond_z_var = tk.DoubleVar(value=1)
 
-        self.init_cond_x_input = ttk.Entry(self.init_cond_frame, textvariable=self.init_cond_x_var, width=10)
+        self.update_previous_values()
+
+        vcmd_init_cond = (self.embedding_param_frame.register(self.validate_init_cond), '%P')
+
+        self.init_cond_x_input = ttk.Entry(self.init_cond_frame, textvariable=self.init_cond_x_var, width=10,
+                                           validate='focusout', validatecommand=vcmd_init_cond)
         self.init_cond_x_input.grid(row=1, column=1, sticky='ew', padx=(10, 0), pady=(0, 10))
-        self.init_cond_y_input = ttk.Entry(self.init_cond_frame, textvariable=self.init_cond_y_var, width=10)
+        self.init_cond_y_input = ttk.Entry(self.init_cond_frame, textvariable=self.init_cond_y_var, width=10,
+                                           validate='focusout', validatecommand=vcmd_init_cond)
         self.init_cond_y_input.grid(row=2, column=1, sticky='ew', padx=(10, 0), pady=(0, 10))
-        self.init_cond_z_input = ttk.Entry(self.init_cond_frame, textvariable=self.init_cond_z_var, width=10)
+        self.init_cond_z_input = ttk.Entry(self.init_cond_frame, textvariable=self.init_cond_z_var, width=10,
+                                           validate='focusout', validatecommand=vcmd_init_cond)
         self.init_cond_z_input.grid(row=3, column=1, sticky='ew', padx=(10, 0), pady=(0, 10))
 
     def general_controls_layout(self):
-        self.general_controls_frame = ttk.Frame(self.command_window_frame_top)
-        self.general_controls_frame.pack(side='left', anchor='c')
+        self.general_controls_frame = ttk.Frame(self.command_window_frame_bottom)
+        self.general_controls_frame.pack(anchor='c', expand=True, fill='y', pady=(0,20))
 
-        self.btn_start = ttk.Button(self.general_controls_frame, text="Start", command=self.start_func, width=10)
-        self.btn_start.pack(padx=10, fill='x')
+        self.btn_start = ttk.Button(self.general_controls_frame, text="Start", command=self.start_func)
+        self.btn_start.pack(side='left', padx=10, fill='x', anchor='s')
 
         self.btn_stop = ttk.Button(self.general_controls_frame, text="Pause", command=self.stop_func)
-        self.btn_stop.pack(padx=10, fill='x')
+        self.btn_stop.pack(side='left', padx=10, fill='x', anchor='s')
 
         self.btn_reset = ttk.Button(self.general_controls_frame, text="Reset", command=self.reset_func)
-        self.btn_reset.pack(padx=10, fill='x')
+        self.btn_reset.pack(side='left', padx=10, fill='x', anchor='s')
 
     def function_selection_layout(self):
-        self.function_selection_frame = ttk.Frame(self.command_window_frame_bottom)
-        self.function_selection_frame.pack(side='left', anchor='n')
+        self.function_selection_frame = ttk.Frame(self.command_window_frame_middle)
+        self.function_selection_frame.pack(side='left',pady=(20), padx=(30,0))
 
         self.label_option = ttk.Label(self.function_selection_frame, text='Select Function: ')
-        self.label_option.pack(pady=(10,0), padx=10)
+        self.label_option.pack(padx=10)
 
         self.selected_option_func = tk.StringVar()
         functions = ["Lorenz", "Chua", "Rossler", "Chen", "upload function"]
@@ -144,8 +154,8 @@ class funcTab:
         # self.btn_load_file.pack(padx=10)
 
     def speed_control_layout(self):
-        self.slider_frame = ttk.Frame(self.command_window_frame_bottom)
-        self.slider_frame.pack(anchor='w', padx=5, pady=20)
+        self.slider_frame = ttk.Frame(self.command_window_frame_middle)
+        self.slider_frame.pack(anchor='e', padx=5, pady=20)
 
         self.time_step_var = tk.IntVar(value=1)
         self.slider_label = ttk.Label(self.slider_frame, text="Animation Speed:")
@@ -155,28 +165,31 @@ class funcTab:
         self.time_step_slider.pack(fill='x', padx=20)
 
     def select_timeseries_layout(self):
-        self.coordinate_frame = ttk.Frame(self.command_window_frame_bottom)
-        self.coordinate_frame.pack(padx=5,fill='x')
+        self.coordinate_frame = ttk.Frame(self.command_window_frame_middle)
+        self.coordinate_frame.pack(anchor='e', padx=(5,25))
 
         self.coord_label = ttk.Label(self.coordinate_frame, text="Variable of Interest:")
         self.coord_label.pack(side='left', padx=(10,0))
+
+        self.coordinate_box_frame = ttk.Frame(self.coordinate_frame, width=200)
+        self.coordinate_box_frame.pack(anchor='e', padx=(20,0))
 
         self.check_var_x = tk.BooleanVar(value=True)
         self.check_var_y = tk.BooleanVar()
         self.check_var_z = tk.BooleanVar()
         self.check_var_CRP = tk.BooleanVar()
-        self.check_button_x = ttk.Checkbutton(self.coordinate_frame, text='x',
+        self.check_button_x = ttk.Checkbutton(self.coordinate_box_frame, text='x',
                                               command=self.reset_func, variable=self.check_var_x)
-        self.check_button_x.pack(side='left', padx=10)
-        self.check_button_y = ttk.Checkbutton(self.coordinate_frame, text='y',
+        self.check_button_x.pack(side='left', padx=(0,10))
+        self.check_button_y = ttk.Checkbutton(self.coordinate_box_frame, text='y',
                                               command=self.reset_func, variable=self.check_var_y)
         self.check_button_y.pack(side='left', padx=10)
-        self.check_button_z = ttk.Checkbutton(self.coordinate_frame, text='z',
+        self.check_button_z = ttk.Checkbutton(self.coordinate_box_frame, text='z',
                                               command=self.reset_func, variable=self.check_var_z)
         self.check_button_z.pack(side='left', padx=10)
-        self.check_button_CRP = ttk.Checkbutton(self.coordinate_frame, text='CRP',
+        self.check_button_CRP = ttk.Checkbutton(self.coordinate_box_frame, text='CRP',
                                               command=self.reset_func, variable=self.check_var_CRP)
-        self.check_button_CRP.pack(side='left', padx=10)
+        self.check_button_CRP.pack(side='left', padx=(10,0))
 
     def display_rqa_measures(self):
         self.rqa_frame = ttk.Frame(self.function_tab)
@@ -220,10 +233,16 @@ class funcTab:
 
         # set up command window
         self.command_window_frame_top = ttk.Frame(self.function_tab)
-        self.command_window_frame_top.place(relx=0, rely=0, relwidth=0.4, relheight=0.25)
+        self.command_window_frame_top.place(relx=0, rely=0, relwidth=0.4, relheight=0.2)
+
+        self.separator = ttk.Separator(self.function_tab, orient='horizontal')
+        self.separator.place(relx=0, rely=0.2)
+
+        self.command_window_frame_middle = ttk.Frame(self.function_tab)
+        self.command_window_frame_middle.place(relx=0, rely=0.2, relwidth=0.4, relheight=0.15)
 
         self.command_window_frame_bottom = ttk.Frame(self.function_tab)
-        self.command_window_frame_bottom.place(relx=0, rely=0.25, relwidth=0.4, relheight=0.20)
+        self.command_window_frame_bottom.place(relx=0, rely=0.35, relwidth=0.4, relheight=0.1)
 
         # set up control panel
         self.general_controls_layout()
@@ -236,20 +255,68 @@ class funcTab:
 
     def validate_threshold(self, value_if_allowed):
         if not value_if_allowed:
-            self.threshold_var.set(0.1)
+            self.revert_to_previous_values()
             return True
         try:
             value = float(value_if_allowed)
             if 0.0 <= value <= 1.0:
+                self.update_previous_values()
                 return True
         except ValueError:
             pass
         self.show_error("Please enter a float between 0.0 and 1.0.")
-        self.threshold_var.set(0.1)
+        self.revert_to_previous_values()
+        return False
+
+    def validate_parameter(self, value_if_allowed):
+        if not value_if_allowed:
+            self.revert_to_previous_values()
+            return True
+        try:
+            value = int(value_if_allowed)
+            if 0 < value:
+                self.update_previous_values()
+                return True
+        except ValueError:
+            pass
+        self.show_error("Please enter a positive integer")
+        self.revert_to_previous_values()
+        return False
+
+    def validate_init_cond(self, value_if_allowed):
+        if not value_if_allowed:
+            self.revert_to_previous_values()
+            return True
+        try:
+            value = float(value_if_allowed)
+            self.update_previous_values()
+            return True
+        except ValueError:
+            pass
+        self.show_error("Please enter a real number")
+        self.revert_to_previous_values()
         return False
 
     def show_error(self, message):
         messagebox.showerror("Input Error", message)
+
+    def update_previous_values(self):
+        self.previous_values = {
+            'init_cond_x': self.init_cond_x_var.get(),
+            'init_cond_y': self.init_cond_y_var.get(),
+            'init_cond_z': self.init_cond_z_var.get(),
+            'embedding_dim': self.embedding_dim_var.get(),
+            'time_delay': self.time_delay_var.get(),
+            'threshold': self.threshold_var.get()
+        }
+
+    def revert_to_previous_values(self):
+        self.init_cond_x_var.set(self.previous_values['init_cond_x'])
+        self.init_cond_y_var.set(self.previous_values['init_cond_y'])
+        self.init_cond_z_var.set(self.previous_values['init_cond_z'])
+        self.embedding_dim_var.set(self.previous_values['embedding_dim'])
+        self.time_delay_var.set(self.previous_values['time_delay'])
+        self.threshold_var.set(self.previous_values['threshold'])
 
     def load_python_module(self):
         file_path = fd.askopenfilename(filetypes=[("Python files", "*.py")])
@@ -331,7 +398,6 @@ class funcTab:
             # calculates recurrence plot
             recurrence_matrix = self.calculate_recurrence_plot(self.x)
             self.calculate_rqa(recurrence_matrix)
-            print(self.rqa_measures)
             self.update_recurrence_plot_figure(recurrence_matrix, 'Recurrence')
 
         elif sum(self.coord_active) == 2 and self.check_var_CRP.get():  # multivariate joint recurrence plot
@@ -351,7 +417,6 @@ class funcTab:
                 if self.coord_active[i]:
                     # get time series
                     data = [coord[i] for coord in self.xyzs]
-                    print('data: ', data)
 
                     # add time series to plot
                     ax_comp.plot(data, lw=0.5, label=f'{coord_key[i]}-coordinate')
@@ -362,8 +427,6 @@ class funcTab:
                         first = False
                     else:
                         data2 = data
-                        print(data1)
-                        print(data2)
                         rp = self.calculate_cross_recurrence_plot(data1, data)
 
             # self.calculate_rqa(rp)
@@ -445,10 +508,8 @@ class funcTab:
         H_ts1 = np.array([data1[i:i + self.m * self.T:self.T] for i in range(self.num_vectors)]).reshape(-1,1)
         H_ts2 = np.array([data2[i:i + self.m * self.T:self.T] for i in range(self.num_vectors)]).reshape(-1,1)
 
-        print(data1)
         # Calculate pairwise distances between trajectory matrices
         self.D = cdist(H_ts1, H_ts2, 'euclidean')
-        print(self.D)
         D_max = np.max(self.D)
         self.D_norm = self.D / D_max
 
@@ -474,11 +535,6 @@ class funcTab:
     def calculate_rqa(self, recurrence_matrix):
         self.rqa_measures = calculate_rqa_measures_pyrqa(self.vectors, self.m, self.T, self.epsilon)
         self.display_rqa_measures()
-        # det2, lam2, lmax2 = calculate_manual_det_lam_lmax(recurrence_matrix)
-        # rqa_measures["DET2"] = det2
-        # rqa_measures["LAM2"] = lam2
-        # rqa_measures["Lmax2"] = lmax2
-        # self.display_rqa_measures(rqa_measures)
 
     def start_func(self):
         if not self.is_running:
@@ -507,7 +563,17 @@ class funcTab:
         self.canvas_ps_func.draw()
         self.canvas_comp_func.draw()
         self.canvas_rp_func.draw()
-        self.rqa_label_func.config(text="RQA Measures will appear here")
+        self.rqa_measures = {
+            "RR": 'TBD',
+            "DET": 'TBD',
+            "L": 'TBD',
+            "Lmax": 'TBD',
+            "DIV": 'TBD',
+            "ENTR": 'TBD',
+            "LAM": 'TBD',
+            "TT": 'TBD'
+        }
+        self.display_rqa_measures()
         if sum([self.check_var_x.get(),self.check_var_y.get(),self.check_var_z.get()]) == 2:
             self.check_button_CRP.configure(state='normal')
         else:

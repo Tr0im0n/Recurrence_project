@@ -18,11 +18,11 @@ class homeTab:
 
 
     def create_home_tab(self):
-        self.title_label = ttk.Label(self.home_tab, text="Welcome to Live Data and Recurrence Plot GUI", font=("Helvetica", 30))
+        self.title_label = ttk.Label(self.home_tab, text="Welcome to Live Data and Recurrence Plot GUI Exploratory", font=("Helvetica", 30))
         self.title_label.pack(pady=10)
 
         self.info_text = ttk.Label(self.home_tab,
-                                   text="This GUI allows you to visualize different chaotic systems "
+                                   text="This GUI Exploratory allows you to visualize different chaotic systems "
                                                        "and analyze their recurrence plots.\n You can start/stop/reset "
                                                        "the live plotting of selected functions and see the "
                                                        "recurrence quantification analysis (RQA) measures.",
@@ -33,7 +33,7 @@ class homeTab:
 
         # self.info_text = tk.Text(self.home_tab, wrap='word', height=3, width=150)
         # self.info_text.insert(tk.END,
-        #                       "This GUI allows you to visualize different chaotic systems and analyze their recurrence plots. "
+        #                       "This GUI Exploratory allows you to visualize different chaotic systems and analyze their recurrence plots. "
         #                       "You can start/stop/reset the live plotting of selected functions and see the recurrence quantification analysis (RQA) measures.")
         # self.info_text.config(state=tk.DISABLED)
         # self.info_text.pack(pady=10)

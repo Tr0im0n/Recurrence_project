@@ -1,4 +1,4 @@
-# Exploratory GUI for interacting with Recurrence Plots
+# Exploratory GUI Exploratory for interacting with Recurrence Plots
 # Maastricht University, Circular Engineering
 # June, 2024
 
@@ -15,6 +15,7 @@ class LivePlotApp:
         self.root = root
         self.root.title("Live Data and Recurrence Plot")
         self.root.configure(bg='white')
+        self.root.geometry('1200x400')
 
         # tab set up
         self.notebook = ttk.Notebook(root)

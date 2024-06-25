@@ -203,12 +203,19 @@ def package(signal: np.ndarray, m: int = 5, t: int = 1):
     return ans
 
 
-def view_cdist(signal, m: int = 5, t: int = 1):
-    old_shape = signal.shape[0]
-    new_shape = old_shape - (m - 1) * t
+def view_cdist(signal: np.ndarray, m: int = 5, t: int = 1):
+    new_shape = signal.shape[0] - (m - 1) * t
     indices = np.arange(new_shape)[:, None] + np.arange(0, m * t, t)    # new_shape x m
     result = signal[indices]    # just a view
     return cdist(result, result, metric='euclidean')    # new_shape x new_shape
+
+
+def stride_cdist(signal: np.ndarray, m: int = 5, t: int = 1):
+    new_shape = signal.shape[0] - (m - 1) * t
+    result = np.lib.stride_tricks.as_strided(signal,
+                                             shape=(new_shape, m),
+                                             strides=(signal.strides[0], signal.strides[0] * t))
+    return cdist(result, result, metric='euclidean')
 
 
 def epsilon_slider():
@@ -257,54 +264,64 @@ def epsilon_slider():
 
 
 def compare_all(n_samples: int = 4_000, m: int = 5):
+    time_obj = TimeObject()
     my_signal = composite_signal(n_samples, ((0.01, 4), (0.02, 2), (0.04, 1)))    # ((1, 4), (2, 2), (4, 1))
-    funcs = [hankel_pdist,
+    funcs = [view_cdist,
+             # hankel_pdist,
              # martina,
-             hankel_kron_norm,
+             # hankel_kron_norm,
              # double_for_loop_hankel,
              # double_for_loop_length_matrix,
              # convolve_triangle_shift,
              # convolve_diagonal,
              # carl,
-             test3,
-             view_cdist,
-             package]
+             # test3,
+             # package,
+             stride_cdist]
     rps = []
-    time_obj = TimeObject()
+    time_obj.new("Setup")
     for func in funcs:
         rps.append(func(my_signal, m))
-        time_obj.new("")
+        time_obj.new(f"{func.__name__}")
 
-    durations = time_obj.time_list
+    return
 
-    fig, axs = plt.subplots(2, 3)
+    durations = time_obj.time_list[-2:]
+
+    fig, axs = plt.subplots(1, 2)
     fig.suptitle(f"Samples: {n_samples}")
     for ax, rp, duration, func in zip(axs.flat, rps, durations, funcs):
         ax.imshow(rp, cmap="gray", origin="lower")
         ax.set_title(f"{func.__name__}:\n{duration:.6f}")
+    time_obj.new("Plotting")
     plt.show()
 
 
 def view_cdist_vs_time(max_samples: int = 8_000, m: int = 5):
     my_signal = composite_signal(max_samples, ((0.01, 4), (0.02, 2), (0.04, 1)))    # ((1, 4), (2, 2), (4, 1))
     rps = []
-    sizes = np.arange(1_000, max_samples+1, 200)
+    sizes = np.arange(4_000, max_samples+1, 500)
     time_obj = TimeObject()
     for size in sizes:
-        rps.append(view_cdist(my_signal[:size], m))
-        time_obj.new("")
+        for func in (stride_cdist, view_cdist):
+            # rps.append(func(my_signal[:size], m))
+            func(my_signal[:size], m)
+            time_obj.new("")
 
-    durations = time_obj.time_list
+    # my_len = int(len(time_obj.time_list)/2)
 
     fig, ax = plt.subplots(1, 1)
     fig.suptitle(f"{view_cdist.__name__}")
-    ax.plot(sizes, durations)
+    ax.plot(sizes, time_obj.time_list[1::2], label=f"{view_cdist.__name__}")
+    ax.plot(sizes, time_obj.time_list[0::2], label=f"{stride_cdist.__name__}")
     ax.set_xlabel("Amount of samples (#)")
     ax.set_ylabel("Time (s)")
+    ax.legend()
     plt.show()
 
 
 if __name__ == "__main__":
+    # compare_all()
     view_cdist_vs_time()
 
 
