@@ -64,10 +64,6 @@ def calculate_manual_det_lam_lmax(recurrence_matrix):
 
     return det2, lam2, lmax2
 
-# def display_rqa_measures(rqa_label, rqa_measures):
-#     text = "\n".join([f"{k}: {v:.4f}" for k, v in rqa_measures.items()])
-#     rqa_label.config(text=text)
-
 
 def extract_diagonal_lengths(recurrence_matrix):
     num_points = recurrence_matrix.shape[0]

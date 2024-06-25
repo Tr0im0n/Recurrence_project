@@ -14,12 +14,15 @@ class LivePlotApp:
         self.root = root
         self.root.title("Predictive Maintenance Interface")
         self.root.configure(bg='white')
+        self.root.geometry("1000x800")
 
         # tab set up
         self.notebook = ttk.Notebook(root)
         self.notebook.pack(expand=True, fill='both')
         self.display_tab = dispTab(self.root, self.notebook)
         self.settings_tab = settingsTab(self.root, self.notebook)
+
+
 
 if __name__ == "__main__":
     root = tk.Tk()

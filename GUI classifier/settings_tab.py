@@ -16,7 +16,7 @@ class settingsTab:
         self.notebook = notebook
 
         self.disp_tab = ttk.Frame(notebook)
-        notebook.add(self.disp_tab, text='Live Window')
+        notebook.add(self.disp_tab, text='Settings')
         self.create_disp_tab()
 
         test_label = ttk.Label(self.disp_tab, text='hello world')
