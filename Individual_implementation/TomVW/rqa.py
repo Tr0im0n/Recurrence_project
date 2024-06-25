@@ -8,7 +8,7 @@ from Classifier.feature_extraction import calc_rqa_measures, calc_recurrence_plo
 from Classifier.preprocessing import load_data, sliding_window_view
 
 
-m = 5   # Embedding dimension
+m = 20   # Embedding dimension
 T = 2  # Delay
 epsilon = 0.1  # Threshold, % of largest distance vec
 window_size = 1000  # Window size
