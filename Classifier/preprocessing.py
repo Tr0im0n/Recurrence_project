@@ -13,7 +13,6 @@ def sliding_window_view(arr, window_size, step):
     return np.lib.stride_tricks.as_strided(arr, shape=shape, strides=strides)
 
 def prepare_datasets_multi_class(healthy, race_fault, ball_fault, window_size, delay, feature_func):
-
     # Create features for healthy data
     healthy_windows = sliding_window_view(healthy, window_size, delay)
     healthy_measures = np.apply_along_axis(feature_func, 1, healthy_windows)

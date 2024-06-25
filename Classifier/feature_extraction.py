@@ -5,12 +5,12 @@ from itertools import groupby
 from sklearn.neighbors import NearestNeighbors
 from scipy.stats import entropy
 
-def calc_recurrence_plot(timeseries: np.ndarray, m: int, t: int, epsilon: float = 0.1, use_fnn: bool = False):
+def calc_recurrence_plot(timeseries: np.ndarray, m: int, T: int, epsilon: float = 0.1, use_fnn: bool = False):
     if use_fnn:
-        m = false_nearest_neighbors(timeseries)
+        m = false_nearest_neighbors(timeseries, tau = T)
         print(f"Estimated embedding dimension m using FNN: {m}")
-    new_shape = timeseries.shape[0] - (m - 1) * t
-    indices = np.arange(new_shape)[:, None] + np.arange(0, m * t, t)    # new_shape x m
+    new_shape = timeseries.shape[0] - (m - 1) * T
+    indices = np.arange(new_shape)[:, None] + np.arange(0, m * T, T)    # new_shape x m
     result = timeseries[indices]    # just a view
     distance_matrix = cdist(result, result, metric='euclidean')    # new_shape x new_shape
     max_distance = np.max(distance_matrix)
@@ -67,89 +67,65 @@ def calc_rqa_measures(recurrence_matrix, min_line_length=2):
     TT = np.mean(valid_vertical_lengths) if len(valid_vertical_lengths) > 0 else 0
     return np.array([RR, DET, L, TT, Lmax, DIV, ENTR, LAM])
 
-def false_nearest_neighbors(timeseries, max_dim: int = 15, T=1, Rtol=10.0, Atol=2.0):
-    n = len(timeseries)
+def false_nearest_neighbors(timeseries, max_dim=100, tau=1, R_tol=15, A_tol=2):
+    """
+    Compute the False Nearest Neighbors to estimate the embedding dimension.
+    
+    Parameters:
+    - timeseries: numpy array, the input time series
+    - max_dim: int, maximum embedding dimension to test (default: 10)
+    - tau: int, time delay (default: 1)
+    - R_tol: float, distance tolerance (default: 15)
+    - A_tol: float, relative size tolerance (default: 2)
+    
+    Returns:
+    - optimal_dim: int, the estimated optimal embedding dimension
+    """
+    N = len(timeseries)
+    fnn_fractions = []
 
-    for d in range(1, max_dim + 1):
-        embedding = np.zeros((n - d * T + 1, d))
-        for i in range(n - d * T + 1):
-            embedding[i] = timeseries[i:i + d * T:T]
-
-        if embedding.shape[0] < 2:
-            continue  # Need at least two points to proceed
-
-        # Find nearest neighbors in the current dimension
-        nn = NearestNeighbors(n_neighbors=2).fit(embedding)
-        distances, indices = nn.kneighbors(embedding)
-
-        count_fnn = 0
-        for i in range(len(embedding)):
-            dist_d = distances[i, 1]
-            neighbor_idx = indices[i, 1]
-
-            # Check next higher dimension
-            if i + d * T < n and neighbor_idx + d * T < n:
-                point_d1 = np.append(embedding[i], timeseries[i + d * T])
-                neighbor_point_d1 = np.append(embedding[neighbor_idx], timeseries[neighbor_idx + d * T])
-                dist_d1 = np.linalg.norm(point_d1 - neighbor_point_d1)
-
-                if dist_d1 / dist_d > Rtol or abs(dist_d1 - dist_d) > Atol:
-                    count_fnn += 1
-
-        fnn_ratio = count_fnn / len(embedding)
-        if fnn_ratio < 0.1:
-            return d  # Return the current dimension as the minimum
-
-    return -1  # Return -1 if no suitable dimension is found
-
-
-def false_nearest_neighbors2(series, max_dim, tau):
-    num_points = len(series)
-
-    # Initialize arrays to store results
-    fnn_ratios = np.zeros(max_dim - 1)
-
-    for m in range(1, max_dim):
-        # Time delay embedding
-        X_embedded = np.asarray([series[i:i + m] for i in range(num_points - (m - 1) * tau)])
-
-        # Calculate distances in embedded space
-        nbrs = NearestNeighbors(n_neighbors=2, algorithm='ball_tree').fit(X_embedded)
-        distances, _ = nbrs.kneighbors(X_embedded)
-
-        # Calculate Euclidean distances
-        dist1 = distances[:, 1]  # distance to the nearest neighbor in embedded space
-        dist_original = np.abs(series[:len(dist1)] - series[m * tau:])  # distance in original space
-
-        # Compute the ratio of distances
-        ratio = dist1 / dist_original
-
-        # Count false nearest neighbors
-        fnn_count = np.sum(ratio > 15)  # threshold for false nearest neighbors
-
-        # Calculate ratio of false nearest neighbors
-        fnn_ratio = fnn_count / len(series)
-
-        # Store the ratio for this embedding dimension
-        fnn_ratios[m - 1] = fnn_ratio
-
-    return fnn_ratios
-
-
-def test1():
-    # Example usage
-    # Generate a sample time series
-    np.random.seed(0)
-    time_series = np.cumsum(np.random.randn(1000))
-
-    # Parameters
-    max_dim = 10  # maximum embedding dimension to check
-    tau = 1  # time delay
-
-    # Compute false nearest neighbor ratios
-    fnn_ratios = false_nearest_neighbors(time_series, max_dim, tau)
-
-    # Print the results
-    print("False nearest neighbor ratios:")
-    for m in range(1, max_dim):
-        print(f"Dimension {m}: {fnn_ratios[m - 1]}")
+    for dim in range(1, max_dim):
+        # Construct delay embedding
+        embed_len = N - (dim * tau)
+        if embed_len <= 0:
+            print(f"Warning: Embedding dimension {dim} is too large for the given time series length.")
+            break
+        
+        embed = np.array([timeseries[i:i + dim * tau:tau] for i in range(embed_len)])
+        
+        # Find nearest neighbors
+        nbrs = NearestNeighbors(n_neighbors=2, metric='euclidean').fit(embed)
+        distances, indices = nbrs.kneighbors(embed)
+        
+        # Compute FNN
+        fnn_count = 0
+        valid_points = 0
+        for i in range(embed_len):
+            d_curr = distances[i, 1]
+            nn_curr = indices[i, 1]
+            
+            if d_curr == 0 or i + dim * tau >= N or nn_curr + dim * tau >= N:
+                continue
+            
+            valid_points += 1
+            
+            # Check if the nearest neighbor is a false neighbor
+            R_d = abs(timeseries[i + dim * tau] - timeseries[nn_curr + dim * tau]) / d_curr
+            A_d = np.sqrt(R_d**2 + d_curr**2) / d_curr
+            
+            if R_d > R_tol or A_d > A_tol:
+                fnn_count += 1
+        
+        fnn_fraction = fnn_count / valid_points if valid_points > 0 else 0
+        fnn_fractions.append(fnn_fraction)
+        
+        print(f"Dimension {dim}: FNN fraction = {fnn_fraction:.4f}")
+        
+        # Check if FNN fraction is below threshold
+        if fnn_fraction < 0.1:  # You can adjust this threshold
+            return dim
+    
+    # If no clear dimension is found, return the dimension with the lowest FNN fraction
+    optimal_dim = np.argmin(fnn_fractions) + 1
+    print(f"No clear optimal dimension found. Returning dimension with lowest FNN fraction: {optimal_dim}")
+    return optimal_dim

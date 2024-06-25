@@ -6,22 +6,15 @@ from classifier import train_svm, train_binary_classifier, train_multiclass_clas
 
 """ 
 To-Do:
-- "troubleshoot" 100% accuracy
-- To verify if this 100% accuracy is robust: (Claude 3.5 Sonnet)
-    - Implement k-fold cross-validation to get a more reliable estimate of model performance.
-    - Test the model on completely new, unseen data from different operating conditions. <<<<<<<<<<
-    - Try different classification algorithms to see if the high accuracy persists.
-    - Analyze the decision boundary of the SVM to understand how it's separating the classes.
-    - Implement regularization (adjust the C parameter of the SVM) to reduce potential overfitting.
+
 - use techniques to choose params (m, tau, epsilon, window-size, window-delay, classifier params)
 - classifier params => optimization techniques
-- 
 """
 
 def main():
     # Constants
     m = 3 # Embedding dimension
-    T = 2  # Delay
+    T = 2 # Delay
     epsilon = 0.1  # Threshold, % of largest distance vec
     l = 1000  # Window size
     delay = 100  # Delay before calculating next RP
