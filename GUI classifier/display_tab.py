@@ -9,12 +9,14 @@ from pyrqa.neighbourhood import FixedRadius
 from scipy.spatial.distance import pdist, squareform
 from data_feed import make_window
 from time import time
+import joblib
 
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import tkinter.filedialog as fd
+
 
 class dispTab:
     def __init__(self, root, notebook):
@@ -60,15 +62,12 @@ class dispTab:
         self.canvas_data = FigureCanvasTkAgg(self.fig_live_data, master=self.live_plot_frame)
         self.canvas_data.get_tk_widget().pack(fill='both', expand=True, padx=10, pady=10)
 
-        self.update_data_plot()
-
         # set up maintenance warning display
         self.warning_frame = tk.Frame(self.left_frame, background='white', bd=2, relief='solid', highlightbackground="black", highlightcolor="black",
                          highlightthickness=1)
         self.warning_frame.place(relx=0.1, rely=0.55, relwidth=0.8, relheight=0.4)
 
-        self.update_warning_data()
-
+        self.warning_data()
 
     def update_data_plot(self):
         if not self.is_running:
@@ -88,18 +87,22 @@ class dispTab:
         self.fig_live_data.clear()
         ax_ps = self.fig_live_data.add_subplot(111)
         ax_ps.plot(t, self.data, lw=0.5)
-        ax_ps.set_title(f"Live data")
+        ax_ps.set_title("Live data")
         ax_ps.set_xlabel("Time")
         ax_ps.set_ylabel("Data")
         ax_ps.set_ylim(-1, 1)
+        self.fig_live_data.savefig('live_data.png')
         self.fig_live_data.tight_layout()
 
         self.canvas_data.draw()
 
-        # if self.is_running:
-        #     self.root.after(100, self.update_data_plot)
+        if self.is_running:
+            self.root.after(100, self.update_data_plot)
+            self.update_rp()
+            self.update_rqa_plot()
+            self.classifier_result()
 
-    def update_warning_data(self):
+    def warning_data(self):
         self.red_light = tk.Radiobutton(self.warning_frame, indicatoron=1, width=3, height=3, bg="grey",
                                         bd=2, highlightbackground="black", highlightcolor="black")
         self.red_light.pack(side="left", padx=20, pady=20)
@@ -137,11 +140,11 @@ class dispTab:
         self.canvas_rp = FigureCanvasTkAgg(self.fig_rp, master=self.rp_frame)
         self.canvas_rp.get_tk_widget().pack(fill='both', expand=True, padx=10, pady=10)
 
-        self.update_rp()
+        # self.update_rp()
 
         # set up RQA feature plot
-        self.calculate_rqa_measures_pyrqa()
-        print(self.RR, self.DET)
+        # self.calculate_rqa_measures_pyrqa()
+        # print(self.RR, self.DET)
 
         self.rqa_frame = tk.Frame(self.right_frame, background='white')
         self.rqa_frame.place(relx=0, rely=0.5, relwidth=1, relheight=0.5)
@@ -150,7 +153,8 @@ class dispTab:
         self.canvas_rqa = FigureCanvasTkAgg(self.fig_rqa, master=self.rqa_frame)
         self.canvas_rqa.get_tk_widget().pack(fill='both', expand=True, padx=10, pady=10)
 
-        self.update_rqa_plot()
+        self.update_data_plot()
+        # self.update_rqa_plot()
 
     def update_rp(self):
         # calculates recurrence plot
@@ -208,16 +212,24 @@ class dispTab:
         computation = RQAComputation.create(settings)
         result = computation.run()
 
-        self.rqa_measures = {
-            "RR": round(result.recurrence_rate, 3),
-            "DET": round(result.determinism, 3),
-            "L": round(result.average_diagonal_line, 3),
-            "Lmax": round(result.longest_diagonal_line, 3),
-            "DIV": round(result.divergence, 3),
-            "ENTR": round(result.entropy_diagonal_lines, 3),
-            "LAM": round(result.laminarity, 3),
-            "TT": round(result.trapping_time, 3)
-        }
+        # self.rqa_measures = {
+        #     "RR": round(result.recurrence_rate, 3),
+        #     "DET": round(result.determinism, 3),
+        #     "L": round(result.average_diagonal_line, 3),
+        #     "Lmax": round(result.longest_diagonal_line, 3),
+        #     "DIV": round(result.divergence, 3),
+        #     "ENTR": round(result.entropy_diagonal_lines, 3),
+        #     "LAM": round(result.laminarity, 3),
+        #     "TT": round(result.trapping_time, 3)
+        # }
+        self.rqa_measures = np.array([result.recurrence_rate,
+                                      result.determinism,
+                                      result.average_diagonal_line,
+                                      result.trapping_time,
+                                      result.longest_diagonal_line,
+                                      result.divergence,
+                                      result.entropy_diagonal_lines,
+                                      result.laminarity]).reshape(1, -1)
 
         self.RR.append(result.recurrence_rate)
         self.DET.append(result.determinism)
@@ -233,8 +245,12 @@ class dispTab:
         self.fig_rqa.clear()
         ax_rp_func = self.fig_rqa.add_subplot(111)
 
+        self.calculate_rqa_measures_pyrqa()
+        print(self.RR, self.DET)
+
         # plot recurrence matrix
-        ax_rp_func.plot(self.RR, self.DET)
+        ax_rp_func.scatter(self.RR, self.DET)
+
         # self.fig_rp.colorbar(im, ax=ax_rp_func)
         ax_rp_func.set_title("RQA Measures")
         ax_rp_func.set_xlabel("Recurrence Rate")
@@ -242,6 +258,10 @@ class dispTab:
 
         # display rp
         self.canvas_rp.draw()
+
+    def classifier_result(self):
+        self.classifier = joblib.load('classifier.joblib')
+        print(self.classifier.predict(self.rqa_measures))
 
 
 
