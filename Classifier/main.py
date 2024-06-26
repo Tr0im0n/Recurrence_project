@@ -3,6 +3,7 @@ import numpy as np
 from preprocessing import load_data, prepare_datasets_bi_class, prepare_datasets_multi_class, scale_features
 from feature_extraction import calc_recurrence_plot, calc_rqa_measures
 from classifier import train_svm, train_binary_classifier, train_multiclass_classifier, predict, evaluate_accuracy
+from joblib import dump
 
 """ 
 To-Do:
@@ -59,5 +60,7 @@ def main():
 
     print(f'Accuracy: {accuracy}')
 
+    dump(classifier, 'classifier.joblib')
+    
 if __name__ == "__main__":
     main()
