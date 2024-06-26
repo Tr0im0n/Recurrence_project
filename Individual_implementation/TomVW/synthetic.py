@@ -3,6 +3,14 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
+def noise_amp_from_db(sine_tuples: any, db_noise: float):
+    max_amp = 0
+    for freq, amp in sine_tuples:
+        if amp > max_amp:
+            max_amp = amp
+    return max_amp / (10 ** (db_noise / 20))
+
+
 def noise(length: int = 100, amplitude: float = None, *, noise_type: str = None):
     """
     :param amplitude:
@@ -58,23 +66,27 @@ def spikes(length: int = 100, spike_width: int = None, spike_height: float = Non
     return ans
 
 
-def composite_signal(length: int = 1000, sine_tuples=None, *, noise_amplitude: float = None,
+def composite_signal(length: int = 1000, sine_tuples=None, *,
+                     noise_type: str = None,
+                     noise_db: float, noise_amplitude: float = None,
                      spike_width: int = None, spike_height: float = None,
                      return_spike_locations: bool = False):
     """
     Makes a composite signal of both sines, noises and spikes
-    :param length:
-    :param sine_tuples:
-    :param noise_amplitude:
-    :param spike_width:
-    :param spike_height:
-    :param return_spike_locations:
-    :return:
+    Noise types implemented: decibel, normal, uniform.
     """
     sine_tuples = tuple() if sine_tuples is None else sine_tuples
     xs = np.arange(0, length, 1)
     array_list = [sine(freq, amp, xs) for freq, amp in sine_tuples]
-    array_list.append(noise(length, noise_amplitude, noise_type="uniform"))
+    if noise_type is None:
+        pass
+    elif "decibel" == noise_type:
+        noise_amplitude = noise_amp_from_db(sine_tuples, noise_db)
+        array_list.append(noise(length, noise_amplitude, noise_type="uniform"))
+    elif noise_type in ("uniform", "normal"):
+        array_list.append(noise(length, noise_amplitude, noise_type=noise_type))
+    else:
+        print(f"Noise type: {noise_type} does not exist. ")
     if not return_spike_locations:
         array_list.append(spikes(length, spike_width, spike_height))
         return sum(array_list)
