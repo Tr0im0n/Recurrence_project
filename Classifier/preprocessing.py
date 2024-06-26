@@ -12,20 +12,20 @@ def sliding_window_view(arr, window_size, step):
     strides = (step * arr.strides[0], arr.strides[0])
     return np.lib.stride_tricks.as_strided(arr, shape=shape, strides=strides)
 
-def prepare_datasets_multi_class(time_series, fault_names, window_size, delay, feature_func):
+def prepare_datasets_multi_class(data, fault_names, window_size, delay, feature_func):
     """
-    All arrays in time_series should be the same length
+    All arrays in data should be the same length
     """
 
     test1 = []  # Will become a list with arrays of rqas
-    for i, series in enumerate(time_series):
+    for i, series in enumerate(data):
         windows = sliding_window_view(series, window_size, delay)
         rqas = np.apply_along_axis(feature_func, 1, windows)
         print(f"{fault_names[i]} measures shape: {rqas.shape}")
         test1.append(rqas)
 
     size = test1[0].shape[0]
-    amount_of_time_series = len(time_series)
+    amount_of_time_series = len(data)
     all_labels = np.zeros(amount_of_time_series*size)
     for i in range(1, amount_of_time_series):
         all_labels[i*size:(i+1)*size] = i * np.ones(size)
