@@ -23,13 +23,16 @@ def main():
     healthy_data_path = 'Classifier/data/normal_3hp_1730rpm.csv'
     inner_race_fault_path = 'Classifier/data/InnerRace_0.028.csv'
     ball_fault_path = 'Classifier/data/Ball_0.028.csv'
-
     full_data_path = 'Classifier/data/bearingData_3hp_1730rpmDE - Tabellenblatt1.csv'
+
+    inner_race_fault_007_path = 'Classifier/data/.007_inner_race.csv'
+    ball_fault_007_path = 'Classifier/data/.007_ball.csv'
+    outer_race_fault_007_path = 'Classifier/data/.007_centerd_6.csv'
     
     healthy = load_data(healthy_data_path, 'X100_DE_time', num_samples)
-    inner_race_fault_007 = load_data(full_data_path, 'InnerRace 0.007', num_samples)
-    ball_fault_007 = load_data(full_data_path, 'ball0.007', num_samples)
-    outer_race_fault_007 = load_data(full_data_path, 'outerRace6_007', num_samples)
+    inner_race_fault_007 = load_data(inner_race_fault_007_path, 'X121_DE_time', num_samples)
+    ball_fault_007 = load_data(ball_fault_007_path, 'X108_DE_time', num_samples)
+    outer_race_fault_007 = load_data(outer_race_fault_007_path, 'X133_DE_time', num_samples)
 
     data = [healthy, inner_race_fault_007, ball_fault_007, outer_race_fault_007]
     fault_names = ['Healthy', 'Inner race fault', 'Ball fault', 'Outer race fault']
