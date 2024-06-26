@@ -18,8 +18,8 @@ num_samples = 50000
 a_list = ["RR", "DET", "L", "TT", "Lmax", "DIV", "ENTR", "LAM"]
 b_list = ["healthy", "inner race", "ball"]
 
-os.chdir(r"..")
-os.chdir(r"..")
+os.chdir(r"../..")
+# os.chdir(r"..")
 
 print(os.getcwd())
 

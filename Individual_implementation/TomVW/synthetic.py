@@ -3,6 +3,14 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
+def noise_amp(sine_tuples: any, db_noise: float):
+    max_amp = 0
+    for freq, amp in sine_tuples:
+        if amp > max_amp:
+            max_amp = amp
+    return max_amp / (10 ** (db_noise / 20))
+
+
 def noise(length: int = 100, amplitude: float = None, *, noise_type: str = None):
     """
     :param amplitude:
