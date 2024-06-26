@@ -65,6 +65,8 @@ def calc_rqa_measures(recurrence_matrix, min_line_length=2):
     
     LAM = np.sum(valid_vertical_lengths) / np.sum(recurrence_matrix) if np.sum(recurrence_matrix) != 0 else 0
     TT = np.mean(valid_vertical_lengths) if len(valid_vertical_lengths) > 0 else 0
+
+    
     return np.array([RR, DET, L, TT, Lmax, DIV, ENTR, LAM])
 
 def false_nearest_neighbors(timeseries, max_dim=100, tau=1, R_tol=15, A_tol=2):
