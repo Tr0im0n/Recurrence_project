@@ -3,6 +3,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import numpy as np
+from feature_extraction import pyrqa
 
 def load_data(filepath, column_name, num_samples):
     return pd.read_csv(filepath)[column_name][0:num_samples].values
@@ -12,7 +13,7 @@ def sliding_window_view(arr, window_size, step):
     strides = (step * arr.strides[0], arr.strides[0])
     return np.lib.stride_tricks.as_strided(arr, shape=shape, strides=strides)
 
-def prepare_datasets_multi_class(data, fault_names, window_size, delay, feature_func):
+def prepare_datasets_multi_class(data, fault_names, window_size, delay, feature_func, feature_func2):	
     """
     All arrays in data should be the same length
     """
@@ -21,8 +22,10 @@ def prepare_datasets_multi_class(data, fault_names, window_size, delay, feature_
     for i, series in enumerate(data):
         windows = sliding_window_view(series, window_size, delay)
         rqas = np.apply_along_axis(feature_func, 1, windows)
+        pyrqas = np.apply_along_axis(feature_func2, 1, windows)
         print(f"{fault_names[i]} measures shape: {rqas.shape}")
-        test1.append(rqas)
+        print("pyRQA measures: ", pyrqas)
+        test1.append(pyrqas)
 
     size = test1[0].shape[0]
     amount_of_time_series = len(data)

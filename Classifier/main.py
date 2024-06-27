@@ -1,9 +1,10 @@
 
 import numpy as np
 from preprocessing import load_data, prepare_datasets_bi_class, prepare_datasets_multi_class, scale_features
-from feature_extraction import calc_recurrence_plot, calc_rqa_measures
+from feature_extraction import calc_recurrence_plot, calc_rqa_measures, pyrqa
 from classifier import train_svm, train_binary_classifier, train_multiclass_classifier, predict, evaluate_accuracy
-from joblib import dump
+from joblib import dump, load
+from sklearn.model_selection import cross_val_score
 
 """ 
 To-Do:
@@ -37,11 +38,13 @@ def main():
 
     data = [healthy, inner_race_fault_007, ball_fault_007, outer_race_fault_007]
     fault_names = ['Healthy', 'Inner race fault', 'Ball fault', 'Outer race fault']
+
     # Feature extraction
     feature_func = lambda data: calc_rqa_measures(calc_recurrence_plot(data, m, T, epsilon, use_fnn=False))
+    feature_func2 = lambda data: pyrqa(data, m, T, epsilon)
 
     if use_multiclass:
-        X_train, X_test, y_train, y_test = prepare_datasets_multi_class(data, fault_names, l, delay, feature_func)
+        X_train, X_test, y_train, y_test = prepare_datasets_multi_class(data, fault_names, l, delay, feature_func, feature_func2)
         # Scale features
         X_train_scaled, X_test_scaled = scale_features(X_train, X_test)
         classifier = train_multiclass_classifier(X_train_scaled, y_train)
@@ -53,9 +56,20 @@ def main():
         # Scale features
         X_train_scaled, X_test_scaled = scale_features(X_train, X_test)
         classifier = train_binary_classifier(X_train_scaled, y_train)
-        
+
+    # X = np.concatenate((X_train, X_test))
+    # y = np.concatenate((y_train, y_test))  
+
+    # scores = cross_val_score(classifier, X, y, cv=5)  # 5-fold cross-validation
+    # print(f'Cross-Validation Accuracy Scores: {scores}')
+    # print(f'Average CV Accuracy: {scores.mean()}')
+    
+    # classifier = load('C:/Users/carle/OneDrive/Dokumente/GitHub/Recurrence_project/Classifier/classifier.joblib')
+
     # Predict and evaluate
     predictions = predict(classifier, X_test_scaled)
+    print(f'Predictions: {predictions}')
+
     accuracy = evaluate_accuracy(y_test, predictions)
 
     print(f'Accuracy: {accuracy}')
