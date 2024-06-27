@@ -8,6 +8,8 @@ from sklearn.preprocessing import StandardScaler
 
 def manual_test(classifier, scaler, data, window_size, delay, feature_func2, start_sample):
     # Use data starting from start_sample
+    max = data.max()
+    data = data / max
     test_series = data[start_sample:]
     windows = sliding_window_view(test_series, window_size, delay)
     X = np.apply_along_axis(feature_func2, 1, windows)
@@ -57,19 +59,19 @@ def main():
     dump(classifier, 'classifier.joblib')
 
     # Manual testing on each fault type
-    # for i, (fault_data, fault_name) in enumerate(zip(data, fault_names)):
-    #     test_preds = manual_test(classifier, scaler, fault_data, l, delay, feature_func2, train_samples)
-    #     accuracy = np.mean(test_preds == i)
-    #     print(f"Accuracy on {fault_name}: {accuracy:.4f}")
+    for i, (fault_data, fault_name) in enumerate(zip(data, fault_names)):
+        test_preds = manual_test(classifier, scaler, fault_data, l, delay, feature_func2, train_samples)
+        accuracy = np.mean(test_preds == i)
+        print(f"Accuracy on {fault_name}: {accuracy:.4f}")
 
-    # Test on Frankenstein dataset
-    classifier = load('GUI classifier/classifier.joblib')
-    frankendata = load_data(frankenstein_path, 'point', 243000)
-    franken_windows = sliding_window_view(frankendata, l, delay)
-    franken_features = np.apply_along_axis(feature_func2, 1, franken_windows)
-    franken_features_scaled = scaler.transform(franken_features)
-    franken_preds = predict(classifier, franken_features_scaled)
-    print("Frankenstein predictions:", *franken_preds, sep= '')
+    # # Test on Frankenstein dataset
+    # classifier = load('GUI classifier/classifier.joblib')
+    # frankendata = load_data(frankenstein_path, 'point', 243000)
+    # franken_windows = sliding_window_view(frankendata, l, delay)
+    # franken_features = np.apply_along_axis(feature_func2, 1, franken_windows)
+    # franken_features_scaled = scaler.transform(franken_features)
+    # franken_preds = predict(classifier, franken_features_scaled)
+    # print("Frankenstein predictions:", *franken_preds, sep= '')
     
 if __name__ == "__main__":
     main()

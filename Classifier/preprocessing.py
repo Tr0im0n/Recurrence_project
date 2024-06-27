@@ -18,6 +18,8 @@ def prepare_datasets_multi_class(data, fault_names, window_size, delay, feature_
     
     for i, series in enumerate(data):
         # Use only the first train_samples for training
+        max = series.max()
+        series = series / max
         train_series = series[:train_samples]
         windows = sliding_window_view(train_series, window_size, delay)
         features = np.apply_along_axis(feature_func2, 1, windows)
