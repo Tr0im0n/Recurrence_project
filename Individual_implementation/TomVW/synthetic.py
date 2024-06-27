@@ -68,7 +68,7 @@ def spikes(length: int = 100, spike_width: int = None, spike_height: float = Non
 
 def composite_signal(length: int = 1000, sine_tuples=None, *,
                      noise_type: str = None,
-                     noise_db: float, noise_amplitude: float = None,
+                     noise_db: float = None, noise_amplitude: float = None,
                      spike_width: int = None, spike_height: float = None,
                      return_spike_locations: bool = False):
     """

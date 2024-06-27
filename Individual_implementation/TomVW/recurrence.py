@@ -218,6 +218,12 @@ def stride_cdist(signal: np.ndarray, m: int = 5, t: int = 1):
     return cdist(result, result, metric='euclidean')
 
 
+def martina2(signal: np.ndarray, m: int = 5, t: int = 1):
+    num_vectors = len(signal) - (m - 1) * t
+    vectors = np.array([signal[i:i + m * t:t] for i in range(num_vectors)])
+    return squareform(pdist(vectors, metric='euclidean'))
+
+
 def epsilon_slider():
     time_obj = TimeObject()
     my_signal = create_signal1()
@@ -265,7 +271,7 @@ def epsilon_slider():
 
 def compare_all(n_samples: int = 4_000, m: int = 5):
     time_obj = TimeObject()
-    my_signal = composite_signal(n_samples, ((0.01, 4), (0.02, 2), (0.04, 1)))    # ((1, 4), (2, 2), (4, 1))
+    my_signal = composite_signal(n_samples, ((0.001, 4), (0.002, 2), (0.004, 1)))    # ((1, 4), (2, 2), (4, 1))
     funcs = [view_cdist,
              # hankel_pdist,
              # martina,
@@ -277,14 +283,13 @@ def compare_all(n_samples: int = 4_000, m: int = 5):
              # carl,
              # test3,
              # package,
-             stride_cdist]
+             # stride_cdist,
+             martina2]
     rps = []
     time_obj.new("Setup")
     for func in funcs:
         rps.append(func(my_signal, m))
         time_obj.new(f"{func.__name__}")
-
-    return
 
     durations = time_obj.time_list[-2:]
 
@@ -294,6 +299,10 @@ def compare_all(n_samples: int = 4_000, m: int = 5):
         ax.imshow(rp, cmap="gray", origin="lower")
         ax.set_title(f"{func.__name__}:\n{duration:.6f}")
     time_obj.new("Plotting")
+
+    print(np.array_equal(rps[0], rps[1]))
+    fig2, ax2 = plt.subplots(1, 1)
+    ax2.imshow(rps[0]-rps[1], cmap="gray", origin="lower")
     plt.show()
 
 
@@ -321,8 +330,8 @@ def view_cdist_vs_time(max_samples: int = 8_000, m: int = 5):
 
 
 if __name__ == "__main__":
-    # compare_all()
-    view_cdist_vs_time()
+    compare_all()
+    # view_cdist_vs_time()
 
 
 """
