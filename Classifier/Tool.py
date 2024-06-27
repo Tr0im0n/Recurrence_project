@@ -1,69 +1,110 @@
-"""----------------------------------------------------------------------------------------------- 
-1. Load data (eg. 0 - 1 000 000)
-2. use first 50 000 samples for training
-3. create timeseries based on healthy -> fault (selectable)
-4. simulate live data acquisition -> processing -> classification
-5. plot per window: timeseries, recurrence plot, rqa graph (customizable), classification
------------------------------------------------------------------------------------------------"""
-from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
 import numpy as np
-
-def train_svm(X_train, y_train, kernel='linear', C=1, decision_function='ovo'):
-    svm_classifier = SVC(kernel=kernel, C=C, decision_function_shape=decision_function)
-    svm_classifier.fit(X_train, y_train)
-    return svm_classifier
-
-def train_multiclass_classifier(X_train, y_train):
-    return train_svm(X_train, y_train, decision_function='ovo')
-
-def predict(classifier, X_test):
-    return classifier.predict(X_test)
-
-def evaluate_accuracy(y_true, predictions):
-    return accuracy_score(y_true, predictions)
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.stats import skew, kurtosis
+from feature_extraction import calc_recurrence_plot, calc_rqa_measures, pyrqa
+from preprocessing import sliding_window_view
 
 def load_data(filepath, column_name, num_samples):
-    return pd.read_csv(filepath)[column_name][0:num_samples].values
+    return pd.read_csv(filepath)[column_name][:num_samples].values
 
-def sliding_window_view(arr, window_size, step):
-    shape = ((arr.shape[0] - window_size) // step + 1, window_size)
-    strides = (step * arr.strides[0], arr.strides[0])
-    return np.lib.stride_tricks.as_strided(arr, shape=shape, strides=strides)
-
-def prepare_datasets_multi_class(time_series, fault_names, window_size, delay, feature_func):
-    """
-    All arrays in time_series should be the same length
-    """
-
-    test1 = []  # Will become a list with arrays of rqas
-    for i, series in enumerate(time_series):
+def calculate_windowed_rqa_measures(data, window_size, delay, m, T, epsilon):
+    all_measures = []
+    for series in data:
         windows = sliding_window_view(series, window_size, delay)
-        rqas = np.apply_along_axis(feature_func, 1, windows)
-        print(f"{fault_names[i]} measures shape: {rqas.shape}")
-        test1.append(rqas)
+        for window in windows:
+            rp = calc_recurrence_plot(window, m, T, epsilon)
+            measures = calc_rqa_measures(rp)
+            all_measures.append(measures)
+    return np.array(all_measures)
+def plot_distributions(rqa_df):
+    measure_names = rqa_df.columns
+    fig, axes = plt.subplots(4, 2, figsize=(20, 30))
+    fig.suptitle('Distribution of RQA Measures Across All Windows', fontsize=16)
+    
+    for i, measure in enumerate(measure_names):
+        ax = axes[i // 2, i % 2]
+        sns.histplot(rqa_df[measure], kde=True, ax=ax)
+        ax.set_title(f'{measure} Distribution')
+        ax.set_xlabel(measure)
+        
+        # Add statistics
+        mean = rqa_df[measure].mean()
+        median = rqa_df[measure].median()
+        skewness = skew(rqa_df[measure])
+        kurt = kurtosis(rqa_df[measure])
+        
+        stats_text = f'Mean: {mean:.2f}\nMedian: {median:.2f}\nSkew: {skewness:.2f}\nKurtosis: {kurt:.2f}'
+        ax.text(0.95, 0.95, stats_text, transform=ax.transAxes, fontsize=10,
+                verticalalignment='top', horizontalalignment='right',
+                bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+    plt.tight_layout()
+    plt.show()
 
-    size = test1[0].shape[0]
-    amount_of_time_series = len(time_series)
-    all_labels = np.zeros(amount_of_time_series*size)
-    for i in range(1, amount_of_time_series):
-        all_labels[i*size:(i+1)*size] = i * np.ones(size)
+def plot_boxplots(rqa_df):
+    plt.figure(figsize=(12, 6))
+    sns.boxplot(data=rqa_df)
+    plt.title('Boxplots of RQA Measures Across All Windows')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.show()
 
-    # Combine the datasets
-    X = np.vstack(test1)
-    print("Concatenated dataset shape:", X.shape)
+def main():
+    # Parameters
+    m, T, epsilon = 10, 2, 0.1
+    num_samples = 25000
+    window_size = 1000
+    delay = 100
 
-    # Split into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(X, all_labels, test_size=0.2)
-    print("Training set shape:", X_train.shape, "Testing set shape:", X_test.shape)
+    # Load data
+    data_paths = [
+        'Classifier/data/normal_3hp_1730rpm.csv',
+        'Classifier/data/.007_inner_race.csv',
+        'Classifier/data/.007_ball.csv',
+        'Classifier/data/.007_centerd_6.csv'
+    ]
+    column_names = ['X100_DE_time', 'X121_DE_time', 'X108_DE_time', 'X133_DE_time']
+    fault_types = ['Healthy', 'Inner Race Fault', 'Ball Fault', 'Outer Race Fault']
+    all_data = [load_data(path, col, num_samples) for path, col in zip(data_paths, column_names)]
+    
+    # Calculate RQA measures for all windows
+    all_measures = []
+    for i, data in enumerate(all_data):
+        measures = calculate_windowed_rqa_measures([data], window_size, delay, m, T, epsilon)
+        all_measures.append(measures)
+        print(f"Calculated measures for {fault_types[i]}: {measures.shape}")
+    
+    all_measures = np.vstack(all_measures)
+    
+    # Create DataFrame
+    measure_names = ['RR', 'DET', 'L', 'TT', 'Lmax', 'DIV', 'ENTR', 'LAM']
+    rqa_df = pd.DataFrame(all_measures, columns=measure_names)
+    
+    # Plot distributions
+    plot_distributions(rqa_df)
+    
+    # Plot boxplots
+    plot_boxplots(rqa_df)
+    
+    # Print summary statistics
+    print(rqa_df.describe())
+    
+    # Print correlation matrix
+    print("\nCorrelation Matrix:")
+    print(rqa_df.corr())
 
-    return X_train, X_test, y_train, y_test
+    # Plot distributions for each fault type
+    for i, fault_type in enumerate(fault_types):
+        start = i * (all_measures.shape[0] // len(fault_types))
+        end = (i + 1) * (all_measures.shape[0] // len(fault_types))
+        fault_df = pd.DataFrame(all_measures[start:end], columns=measure_names)
+        
+        plt.figure(figsize=(20, 10))
+        fault_df.hist(bins=50)
+        plt.suptitle(f'Distribution of RQA Measures for {fault_type}')
+        plt.tight_layout()
+        plt.show()
 
-def train_classifier(data):
-    X_train, X_test, y_train, y_test = data
-    classifier = train_multiclass_classifier(X_train, y_train)
-    print("Classifier Accuracy: ", evaluate_accuracy(y_test, predict(classifier, X_test)))
-    return classifier
+if __name__ == "__main__":
+    main()
