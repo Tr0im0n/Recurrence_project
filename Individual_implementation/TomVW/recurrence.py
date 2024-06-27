@@ -224,6 +224,23 @@ def martina2(signal: np.ndarray, m: int = 5, t: int = 1):
     return squareform(pdist(vectors, metric='euclidean'))
 
 
+def threshold(distance_matrix: np.ndarray, epsilon: float = 0.1):
+    return distance_matrix < epsilon
+
+
+def threshold_cast(distance_matrix: np.ndarray, epsilon: float = 0.1):
+    return (distance_matrix < epsilon).astype(int)
+
+
+def threshold_ip(distance_matrix: np.ndarray, epsilon: float = 0.1):
+    """
+    ip stands for in place, shouldn't need the return
+    """
+    distance_matrix[distance_matrix >= epsilon] = 1
+    distance_matrix[distance_matrix < epsilon] = 0
+    return distance_matrix
+
+
 def epsilon_slider():
     time_obj = TimeObject()
     my_signal = create_signal1()
@@ -329,9 +346,25 @@ def view_cdist_vs_time(max_samples: int = 8_000, m: int = 5):
     plt.show()
 
 
+def compare_threshold(n_samples: int = 4_000):
+    time_obj = TimeObject()
+    my_signal = composite_signal(n_samples, ((0.001, 4), (0.002, 2), (0.004, 1)))
+    rp = view_cdist(my_signal)
+    funcs = [threshold,
+             threshold_cast,
+             threshold_ip]
+    time_obj.new("setup")
+    for func in funcs:
+        func(rp)
+        time_obj.new(func.__name__)
+
+
+
+
 if __name__ == "__main__":
-    compare_all()
+    # compare_all()
     # view_cdist_vs_time()
+    compare_threshold()
 
 
 """
