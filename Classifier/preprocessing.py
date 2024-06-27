@@ -3,7 +3,6 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import numpy as np
-from feature_extraction import pyrqa
 
 def load_data(filepath, column_name, num_samples):
     return pd.read_csv(filepath)[column_name][0:num_samples].values
@@ -13,35 +12,28 @@ def sliding_window_view(arr, window_size, step):
     strides = (step * arr.strides[0], arr.strides[0])
     return np.lib.stride_tricks.as_strided(arr, shape=shape, strides=strides)
 
-def prepare_datasets_multi_class(data, fault_names, window_size, delay, feature_func, feature_func2):	
-    """
-    All arrays in data should be the same length
-    """
-
-    test1 = []  # Will become a list with arrays of rqas
+def prepare_datasets_multi_class(data, fault_names, window_size, delay, feature_func2, train_samples):
+    train_features = []
+    train_labels = []
+    
     for i, series in enumerate(data):
-        windows = sliding_window_view(series, window_size, delay)
-        rqas = np.apply_along_axis(feature_func, 1, windows)
-        pyrqas = np.apply_along_axis(feature_func2, 1, windows)
-        print(f"{fault_names[i]} measures shape: {rqas.shape}")
-        print("pyRQA measures: ", pyrqas)
-        test1.append(pyrqas)
-
-    size = test1[0].shape[0]
-    amount_of_time_series = len(data)
-    all_labels = np.zeros(amount_of_time_series*size)
-    for i in range(1, amount_of_time_series):
-        all_labels[i*size:(i+1)*size] = i * np.ones(size)
-
-    # Combine the datasets
-    X = np.vstack(test1)
-    print("Concatenated dataset shape:", X.shape)
-
-    # Split into training and testing sets
-    X_train, X_test, y_train, y_test = train_test_split(X, all_labels, test_size=0.2)
-    print("Training set shape:", X_train.shape, "Testing set shape:", X_test.shape)
-
-    return X_train, X_test, y_train, y_test
+        # Use only the first train_samples for training
+        train_series = series[:train_samples]
+        windows = sliding_window_view(train_series, window_size, delay)
+        features = np.apply_along_axis(feature_func2, 1, windows)
+        
+        train_features.append(features)
+        train_labels.extend([i] * len(features))
+    
+    X_train = np.vstack(train_features)
+    y_train = np.array(train_labels)
+    
+    # Shuffle the training data
+    shuffle_idx = np.random.permutation(len(X_train))
+    X_train = X_train[shuffle_idx]
+    y_train = y_train[shuffle_idx]
+    
+    return X_train, y_train
 
 
 def prepare_datasets_bi_class(healthy, faulty, window_size, delay, feature_func):
