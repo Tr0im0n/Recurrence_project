@@ -4,15 +4,22 @@ from scipy.spatial.distance import pdist, squareform, cdist
 from itertools import groupby
 from sklearn.neighbors import NearestNeighbors
 from scipy.stats import entropy
+from pyrqa.time_series import TimeSeries
+from pyrqa.settings import Settings
+from pyrqa.neighbourhood import FixedRadius
+from pyrqa.computation import RQAComputation
+from pyrqa.metric import EuclideanMetric
 
 def calc_recurrence_plot(timeseries: np.ndarray, m: int, T: int, epsilon: float = 0.1, use_fnn: bool = False):
     if use_fnn:
         m = false_nearest_neighbors(timeseries, tau = T)
         print(f"Estimated embedding dimension m using FNN: {m}")
+
     new_shape = timeseries.shape[0] - (m - 1) * T
     indices = np.arange(new_shape)[:, None] + np.arange(0, m * T, T)    # new_shape x m
     result = timeseries[indices]    # just a view
     distance_matrix = cdist(result, result, metric='euclidean')    # new_shape x new_shape
+
     max_distance = np.max(distance_matrix)
     normalized_distance_matrix = distance_matrix / max_distance if max_distance > 0 else distance_matrix
     recurrence_matrix = (normalized_distance_matrix <= epsilon).astype(int)
@@ -68,6 +75,23 @@ def calc_rqa_measures(recurrence_matrix, min_line_length=2):
 
     
     return np.array([RR, DET, L, TT, Lmax, DIV, ENTR, LAM])
+
+def pyrqa(timeseries, m, T, epsilon):
+    time_series = TimeSeries(timeseries,
+                                   embedding_dimension=m,
+                                   time_delay=T)
+    settings = Settings(time_series,
+                        neighbourhood=FixedRadius(epsilon),
+                        similarity_measure=EuclideanMetric(), theiler_corrector=1)
+    result = RQAComputation.create(settings).run()
+    return np.array([result.recurrence_rate,
+                     result.determinism,
+                     result.average_diagonal_line,
+                     result.trapping_time,
+                     result.longest_diagonal_line,
+                     result.divergence,
+                     result.entropy_diagonal_lines,
+                     result.laminarity])
 
 def false_nearest_neighbors(timeseries, max_dim=100, tau=1, R_tol=15, A_tol=2):
     """
