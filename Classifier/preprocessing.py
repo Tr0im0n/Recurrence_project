@@ -12,14 +12,14 @@ def sliding_window_view(arr, window_size, step):
     strides = (step * arr.strides[0], arr.strides[0])
     return np.lib.stride_tricks.as_strided(arr, shape=shape, strides=strides)
 
-def prepare_datasets_multi_class(data, fault_names, window_size, delay, feature_func2, train_samples):
+def prepare_datasets_multi_class(data, window_size, delay, feature_func2, train_samples):
     train_features = []
     train_labels = []
     
     for i, series in enumerate(data):
-        # Use only the first train_samples for training
-        max = series.max()
-        series = series / max
+        # max = series.max()
+        # series = series / max
+        # use data starting from train_samples
         train_series = series[:train_samples]
         windows = sliding_window_view(train_series, window_size, delay)
         features = np.apply_along_axis(feature_func2, 1, windows)

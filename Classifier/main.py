@@ -6,10 +6,16 @@ from classifier import train_multiclass_classifier, predict
 from joblib import dump, load
 from sklearn.preprocessing import StandardScaler
 
+""" 
+To-DO:
+Fix rqas with m > 4
+understand scaler fittransform
+understand effect of normalizing the timeseries.
+"""
 def manual_test(classifier, scaler, data, window_size, delay, feature_func2, start_sample):
     # Use data starting from start_sample
-    max = data.max()
-    data = data / max
+    # max = data.max()
+    # data = data / max
     test_series = data[start_sample:]
     windows = sliding_window_view(test_series, window_size, delay)
     X = np.apply_along_axis(feature_func2, 1, windows)
@@ -42,11 +48,11 @@ def main():
     data = [healthy, inner_race_fault_007, ball_fault_007, outer_race_fault_007]
     fault_names = ['Healthy', 'Inner race fault', 'Ball fault', 'Outer race fault']
 
-    # Feature extraction
+    # # Feature extraction
     feature_func2 = lambda data: pyrqa(data, m, T, epsilon)
 
     # Prepare datasets
-    X_train, y_train = prepare_datasets_multi_class(data, fault_names, l, delay, feature_func2, train_samples)
+    X_train, y_train = prepare_datasets_multi_class(data, l, delay, feature_func2, train_samples)
 
     # Scale features
     scaler = StandardScaler()
@@ -64,14 +70,17 @@ def main():
         accuracy = np.mean(test_preds == i)
         print(f"Accuracy on {fault_name}: {accuracy:.4f}")
 
-    # # Test on Frankenstein dataset
-    # classifier = load('GUI classifier/classifier.joblib')
-    # frankendata = load_data(frankenstein_path, 'point', 243000)
-    # franken_windows = sliding_window_view(frankendata, l, delay)
-    # franken_features = np.apply_along_axis(feature_func2, 1, franken_windows)
-    # franken_features_scaled = scaler.transform(franken_features)
-    # franken_preds = predict(classifier, franken_features_scaled)
-    # print("Frankenstein predictions:", *franken_preds, sep= '')
+    # Test on Frankenstein dataset
+    classifier = load('GUI classifier/classifier.joblib')
+    frankendata = load_data(frankenstein_path, 'point', 243000)
+    # frankendata_max = frankendata.max()
+    # frankendata = frankendata / frankendata_max
+    franken_windows = sliding_window_view(frankendata, l, delay)
+    franken_features = np.apply_along_axis(feature_func2, 1, franken_windows)
+    # scaler = StandardScaler()
+    franken_features_scaled = scaler.transform(franken_features)
+    franken_preds = predict(classifier, franken_features_scaled)
+    print("Frankenstein predictions:", *franken_preds, sep= '')
     
 if __name__ == "__main__":
     main()
