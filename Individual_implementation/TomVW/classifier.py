@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split
 
 from Classifier.feature_extraction import calc_rqa_measures, pyrqa
+from Individual_implementation.TomVW.pyrqaGPT import compute_rqa_measures
 from Individual_implementation.TomVW.recurrence import view_cdist, threshold
 # pip install openpyxl
 
@@ -18,6 +19,7 @@ my_fault_names = ["healthy", "Inner race fault 28", "Ball fault 28",
                   "Inner race fault 07", "Ball fault 07", "Outer race fault 07"]
 
 rqa_names = ["RR", "DET", "L", "TT", "Lmax", "DIV", "ENTR", "LAM"]
+markers = ['1', '2', '3', '4', '+', 'x']
 
 
 def stride_array(array: np.ndarray, window_size: int, step: int):
@@ -36,10 +38,11 @@ def rqas_from_time_series(signal: np.ndarray, emb_dim: int = 5, time_delay: int 
 
 
 def my_pyrqa(signal: np.ndarray):
-    emb_dim = 5
+    emb_dim = 2
     time_delay = 2
     epsilon = 0.1
-    return pyrqa(signal, emb_dim, time_delay, epsilon)
+    # return pyrqa(signal, emb_dim, time_delay, epsilon)
+    return compute_rqa_measures(signal, emb_dim, time_delay, epsilon)
 
 
 def csv_to_sheet(file_name: str, i: int = 0, n_amount: int = 10_000, window_size: int = 1_000, step: int = 500):
@@ -49,8 +52,10 @@ def csv_to_sheet(file_name: str, i: int = 0, n_amount: int = 10_000, window_size
     del df
     strided_time_series = stride_array(time_series, window_size, step)
     # rqas = np.apply_along_axis(rqas_from_time_series, 1, strided_time_series)
-    print(my_pyrqa(strided_time_series[0]))
-    rqas = np.apply_along_axis(my_pyrqa, 1, strided_time_series)
+    rqas = np.zeros((20, 8))
+    for i in range(20):
+        rqas[0] = my_pyrqa(strided_time_series[i])
+    # rqas = np.apply_along_axis(my_pyrqa, 1, strided_time_series)
     # np.savetxt(r"Figures/data.csv", rqas, delimiter=',')
     print("done with rqas")
     df_rqas = pd.DataFrame(rqas, columns=rqa_names)
@@ -76,8 +81,10 @@ def xlsx_to_png():
 
     custom_range = [1, 2, 3, 5, 6, 7]
     for i, ax in zip(custom_range, axs_flat):
-        for j, df in enumerate(dfs):
-            ax.scatter(df[rqa_names[0]], df[rqa_names[i]], s=4, label=my_fault_names[j])
+        # for j, df in enumerate(dfs):
+        #     ax.scatter(df[rqa_names[0]], df[rqa_names[i]], s=4, label=my_fault_names[j])
+        for df, fault_name, marker in zip(dfs, my_fault_names, markers):
+            ax.scatter(df[rqa_names[0]], df[rqa_names[i]], label=fault_name, marker=marker)
         ax.set_xlabel(rqa_names[0])
         ax.set_ylabel(rqa_names[i])
         ax.legend()
