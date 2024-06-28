@@ -1,4 +1,4 @@
-import numpy as np
+""" import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.svm import SVC
 from sklearn.preprocessing import RobustScaler
@@ -62,7 +62,7 @@ def main():
 if __name__ == "__main__":
     main()
 
-
+ """
 
 
 
@@ -191,7 +191,7 @@ if __name__ == "__main__":
 
 
 
-""" import numpy as np
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -245,7 +245,7 @@ def plot_boxplots(rqa_df):
 
 def main():
     # Parameters
-    m, T, epsilon = 10, 2, 0.1
+    m, T, epsilon = 20, 2, 0.75
     num_samples = 25000
     window_size = 1000
     delay = 100
@@ -300,4 +300,4 @@ def main():
         plt.show()
 
 if __name__ == "__main__":
-    main() """
+    main()

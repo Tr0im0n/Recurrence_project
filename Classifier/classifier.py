@@ -2,7 +2,7 @@
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
 
-def train_svm(X_train, y_train, kernel='linear', C=100, decision_function='ovo'):
+def train_svm(X_train, y_train, kernel='linear', C=30, decision_function='ovo'):
     svm_classifier = SVC(kernel=kernel, C=C, decision_function_shape=decision_function)
     svm_classifier.fit(X_train, y_train)
     return svm_classifier
