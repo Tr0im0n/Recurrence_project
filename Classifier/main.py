@@ -69,8 +69,8 @@ def main():
     classifier = train_multiclass_classifier(X_train_scaled, y_train)
 
     # Save classifier and scaler
-    # dump(classifier, 'classifier.joblib')
-    # dump(scaler, 'scaler.joblib')
+    dump(classifier, 'classifier.joblib')
+    dump(scaler, 'scaler.joblib')
 
     # Manual testing on each fault type
     for i, (fault_data, fault_name) in enumerate(zip(data, fault_names)):
