@@ -6,17 +6,19 @@ from pyrqa.settings import Settings
 from pyrqa.computation import RQAComputation
 from pyrqa.metric import EuclideanMetric
 from pyrqa.neighbourhood import FixedRadius
-from scipy.spatial.distance import pdist, squareform
+from scipy.spatial.distance import pdist, squareform, cdist
+from sklearn.preprocessing import StandardScaler
 from data_feed import make_window
 from time import time
+from scipy.stats import entropy
 import joblib
+import threading
 
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import tkinter.filedialog as fd
-
 
 class dispTab:
     def __init__(self, root, notebook):
@@ -25,9 +27,8 @@ class dispTab:
         self.notebook = notebook
 
         # Initialize variables
-        self.is_running = True
-        self.path = '/Users/martina/Documents/GitHub/Recurrence_project/Classifier/data/normal_3hp_1730rpm.csv'
-        self.start_time = time()
+        self.is_running = False
+        self.path = '/Users/martina/Documents/GitHub/Recurrence_project/datasets/classefiergui.csv'
         self.RR = []
         self.DET = []
         self.L = []
@@ -36,11 +37,36 @@ class dispTab:
         self.ENTR = []
         self.LAM = []
         self.TT = []
+        self.fault_detected = 0
+
+        # load classifier
+        self.classifier = joblib.load('/Users/martina/Documents/GitHub/Recurrence_project/classifier.joblib')
 
         # create display tab
         self.disp_tab = tk.Frame(notebook, background='white')
         notebook.add(self.disp_tab, text='Live Window')
         self.create_disp_tab()
+
+        # create menu bar
+        self.create_menu_bar()
+
+
+    def create_menu_bar(self):
+        menu_bar = tk.Menu(self.root)
+
+        # Create the "File" menu
+        file_menu = tk.Menu(menu_bar, tearoff=0)
+        file_menu.add_command(label="Start", command=self.start_func)
+        file_menu.add_command(label="Stop", command=self.stop_func)
+        # file_menu.add_command(label='Reset', command=self.reset_func)
+        file_menu.add_separator()
+        file_menu.add_command(label="Exit", command=self.root.quit)
+
+        # Add the "File" menu to the menu bar
+        menu_bar.add_cascade(label="File", menu=file_menu)
+
+        # Configure the menu bar
+        self.root.config(menu=menu_bar)
 
     def create_disp_tab(self):
         self.left_frame = tk.Frame(self.disp_tab, background='white')
@@ -49,9 +75,10 @@ class dispTab:
         self.right_frame = tk.Frame(self.disp_tab, background='white')
         self.right_frame.place(relx=0.5, rely=0, relwidth=0.5, relheight=1)
 
-        self.root.after(2000)
         self.left_window_layout()
         self.right_window_layout()
+
+        self.update_data_plot()
 
     def left_window_layout(self):
         # set up live plot figure
@@ -72,64 +99,72 @@ class dispTab:
     def update_data_plot(self):
         if not self.is_running:
             return
-
         # determine elapsed time to extract relevant data window
         current_time = time()
         elapsed_time = round(current_time - self.start_time, 1)
 
         # get data window
         window_size = 1000
-        self.data = make_window(self.path, elapsed_time, window_size)
+        self.data, self.labels = make_window(self.path, elapsed_time, window_size)
 
-        t = np.linspace(0,window_size, 1000)
+        colors = {1: 'green', 2: 'blue', 3: 'red'}
 
         # plot phase space of function
         self.fig_live_data.clear()
         ax_ps = self.fig_live_data.add_subplot(111)
-        ax_ps.plot(t, self.data, lw=0.5)
+
+        # plot points with color corresponding to error types
+        for label in colors:
+            label_data = self.data[self.labels == label]
+            ax_ps.plot(label_data.index, label_data, c=colors[label], lw=0.5, label=f'Label {label}')
+
+        # ax_ps.plot(t, self.data,lw=0.5)
         ax_ps.set_title("Live data")
         ax_ps.set_xlabel("Time")
         ax_ps.set_ylabel("Data")
         ax_ps.set_ylim(-1, 1)
-        self.fig_live_data.savefig('live_data.png')
         self.fig_live_data.tight_layout()
+        self.fig_live_data.savefig('live_data.png')
 
         self.canvas_data.draw()
 
         if self.is_running:
-            self.root.after(100, self.update_data_plot)
+            self.root.after(200, self.update_data_plot)
             self.update_rp()
             self.update_rqa_plot()
             self.classifier_result()
+            self.change_lights()
 
     def warning_data(self):
-        self.red_light = tk.Radiobutton(self.warning_frame, indicatoron=1, width=3, height=3, bg="grey",
-                                        bd=2, highlightbackground="black", highlightcolor="black")
-        self.red_light.pack(side="left", padx=20, pady=20)
+        # set up red/green light
+        self.light_canvas = tk.Canvas(self.warning_frame, width = 175, height=100, background='white', highlightthickness=0)
+        self.light_canvas.pack()
 
-        self.green_light = tk.Radiobutton(self.warning_frame, indicatoron=0, width=3, height=3, bg="grey",
-                                          bd=2, highlightbackground="black", highlightcolor="black")
-        self.green_light.pack(side="left", padx=20, pady=20)
+        self.green_light = self.light_canvas.create_oval(25, 25, 75, 75)
+        self.red_light = self.light_canvas.create_oval(100, 25, 150, 75)
 
-        self.toggle_button = ttk.Button(self.warning_frame, text="Toggle Lights", command=self.toggle_lights)
-        self.toggle_button.pack(side="left", padx=20, pady=20)
+        self.warning_message = tk.StringVar(value='Machine is happy')
 
-        self.is_red_on = False
-        self.is_green_on = False
+        self.warning_label = tk.Label(self.warning_frame, textvariable=self.warning_message)
+        self.warning_label.pack()
 
-    def toggle_lights(self):
-        if self.is_red_on:
-            self.red_light.config(bg="grey")
-        else:
-            self.red_light.config(bg="red")
-
-        if self.is_green_on:
-            self.green_light.config(bg="grey")
-        else:
-            self.green_light.config(bg="green")
-
-        self.is_red_on = not self.is_red_on
-        self.is_green_on = not self.is_green_on
+    def change_lights(self):
+        if self.fault_detected == 0:
+            self.light_canvas.itemconfig(self.red_light, fill='gray')
+            self.light_canvas.itemconfig(self.green_light, fill='green')
+            self.warning_message.set('Machine is happy')
+        elif self.fault_detected == 1:
+            self.light_canvas.itemconfig(self.red_light, fill='red')
+            self.light_canvas.itemconfig(self.green_light, fill='gray')
+            self.warning_message.set('Inner Race Fault')
+        elif self.fault_detected == 2:
+            self.light_canvas.itemconfig(self.red_light, fill='red')
+            self.light_canvas.itemconfig(self.green_light, fill='gray')
+            self.warning_message.set('Ball fault')
+        elif self.fault_detected == 3:
+            self.light_canvas.itemconfig(self.red_light, fill='red')
+            self.light_canvas.itemconfig(self.green_light, fill='gray')
+            self.warning_message.set('Outer Race Fault')
 
     def right_window_layout(self):
         # set up recurrence plot figure
@@ -140,12 +175,7 @@ class dispTab:
         self.canvas_rp = FigureCanvasTkAgg(self.fig_rp, master=self.rp_frame)
         self.canvas_rp.get_tk_widget().pack(fill='both', expand=True, padx=10, pady=10)
 
-        # self.update_rp()
-
         # set up RQA feature plot
-        # self.calculate_rqa_measures_pyrqa()
-        # print(self.RR, self.DET)
-
         self.rqa_frame = tk.Frame(self.right_frame, background='white')
         self.rqa_frame.place(relx=0, rely=0.5, relwidth=1, relheight=0.5)
 
@@ -153,55 +183,47 @@ class dispTab:
         self.canvas_rqa = FigureCanvasTkAgg(self.fig_rqa, master=self.rqa_frame)
         self.canvas_rqa.get_tk_widget().pack(fill='both', expand=True, padx=10, pady=10)
 
-        self.update_data_plot()
-        # self.update_rqa_plot()
-
     def update_rp(self):
         # calculates recurrence plot
-        recurrence_matrix = self.calculate_recurrence_plot(self.data)
+        self.recurrence_matrix = self.calculate_recurrence_plot()
         # self.calculate_rqa(recurrence_matrix)
-        # print(self.rqa_measures)
 
         # set up figure
         self.fig_rp.clear()
-        ax_rp_func = self.fig_rp.add_subplot(111)
+        ax_rp = self.fig_rp.add_subplot(111)
 
         # plot recurrence matrix
-        im = ax_rp_func.imshow(recurrence_matrix, cmap='binary', origin='lower')
-        self.fig_rp.colorbar(im, ax=ax_rp_func)
-        ax_rp_func.set_title(f"Recurrence Plot")
-        ax_rp_func.set_xlabel("Vector Index")
-        ax_rp_func.set_ylabel("Vector Index")
+        im = ax_rp.imshow(self.recurrence_matrix, cmap='binary', origin='lower')
+        # self.fig_rp.colorbar(im, ax=ax_rp)
+        # ax_rp.set_title(f"Recurrence Plot")
+        ax_rp.set_xlabel("Vector Index")
+        ax_rp.set_ylabel("Vector Index")
+        self.fig_rp.tight_layout()
+        self.fig_rp.savefig('rp.png')
 
         # display rp
         self.canvas_rp.draw()
 
-    def calculate_recurrence_plot(self, data):
-        # get embedding parameters from user input
-        # self.m = self.embedding_dim_var.get()
-        # self.T = self.time_delay_var.get()
-        # self.epsilon = self.threshold_var.get()
-
-        self.m = 1
-        self.T = 1
+    def calculate_recurrence_plot(self):
+        self.m = 3
+        self.T = 2
         self.epsilon = 0.1
 
         # embed time series
-        self.num_vectors = len(data) - (self.m - 1) * self.T
-        self.vectors = np.array([data[t:t + self.m * self.T:self.T] for t in range(self.num_vectors)])
+        self.num_vectors = len(self.data) - (self.m - 1) * self.T
+        self.vectors = np.array([self.data[t:t + self.m * self.T:self.T] for t in range(self.num_vectors)])
 
         if self.vectors.size > 0:  # check that enough points exist to create recurrence plot
             # create and normalize similarity matrix
             self.D = squareform(pdist(self.vectors, metric='euclidean'))
             D_max = np.max(self.D)
             self.D_norm = self.D / D_max
-
-            # create recurrence matrix
             recurrence_matrix = self.D_norm < self.epsilon
             return recurrence_matrix
 
+
     def calculate_rqa_measures_pyrqa(self):
-        time_series = TimeSeries(self.vectors[:, 0], embedding_dimension=self.m, time_delay=self.T)
+        time_series = TimeSeries(self.data, embedding_dimension=self.m, time_delay=self.T)
         settings = Settings(
             time_series,
             neighbourhood=FixedRadius(self.epsilon),
@@ -212,16 +234,6 @@ class dispTab:
         computation = RQAComputation.create(settings)
         result = computation.run()
 
-        # self.rqa_measures = {
-        #     "RR": round(result.recurrence_rate, 3),
-        #     "DET": round(result.determinism, 3),
-        #     "L": round(result.average_diagonal_line, 3),
-        #     "Lmax": round(result.longest_diagonal_line, 3),
-        #     "DIV": round(result.divergence, 3),
-        #     "ENTR": round(result.entropy_diagonal_lines, 3),
-        #     "LAM": round(result.laminarity, 3),
-        #     "TT": round(result.trapping_time, 3)
-        # }
         self.rqa_measures = np.array([result.recurrence_rate,
                                       result.determinism,
                                       result.average_diagonal_line,
@@ -243,69 +255,46 @@ class dispTab:
     def update_rqa_plot(self):
         # set up figure
         self.fig_rqa.clear()
-        ax_rp_func = self.fig_rqa.add_subplot(111)
+        ax_rqa_func = self.fig_rqa.add_subplot(111)
+
+        thread = threading.Thread(target=self.calculate_rqa_measures_pyrqa())
+        thread.start()
 
         self.calculate_rqa_measures_pyrqa()
-        print(self.RR, self.DET)
 
         # plot recurrence matrix
-        ax_rp_func.scatter(self.RR, self.DET)
+        ax_rqa_func.scatter(self.RR, self.DET)
 
         # self.fig_rp.colorbar(im, ax=ax_rp_func)
-        ax_rp_func.set_title("RQA Measures")
-        ax_rp_func.set_xlabel("Recurrence Rate")
-        ax_rp_func.set_ylabel("Determinism")
+        ax_rqa_func.set_title("RQA Measures")
+        ax_rqa_func.set_xlabel("Recurrence Rate")
+        ax_rqa_func.set_ylabel("Determinism")
 
         # display rp
-        self.canvas_rp.draw()
+        self.canvas_rqa.draw()
 
     def classifier_result(self):
-        self.classifier = joblib.load('classifier.joblib')
-        print(self.classifier.predict(self.rqa_measures))
+        scaler = StandardScaler()
+        self.rqa_measures_scaled = scaler.fit_transform(self.rqa_measures)
+        self.fault_detected = self.classifier.predict(self.rqa_measures.reshape(1, -1))
+        print(self.fault_detected)
 
+    def start_func(self):
+        if not self.is_running:
+            self.is_running = True
+            self.start_time = time() - 2
+            self.update_data_plot()
 
+    def stop_func(self):
+        if self.is_running:
+            self.is_running = False
 
-
-    # def start_func(self):
-    #     if not self.is_running:
-    #         self.is_running = True
-    #         self.toggle_buttons("disabled")  # deactivates all user inputs
-    #
-    #         # set initial conditions if time series is empty, otherwise do nothing and plotting will continue from pause
-    #         if len(self.xyzs) == 0:
-    #             self.xyzs = np.array(
-    #                 [[self.init_cond_x_var.get(), self.init_cond_y_var.get(), self.init_cond_z_var.get()]])
-    #
-    #         # start plotting
-    #         self.update_plot()
-    #
-    # def stop_func(self):
-    #     if self.is_running:
-    #         self.is_running = False
-    #         self.toggle_buttons("normal")  # reactivates all user inputs
-    #
-    # def reset_func(self):
-    #     self.is_running = False
-    #     self.xyzs = np.array([])
-    #     self.fig_ps_func.clear()
-    #     self.fig_comp_func.clear()
-    #     self.fig_rp_func.clear()
-    #     self.canvas_ps_func.draw()
-    #     self.canvas_comp_func.draw()
-    #     self.canvas_rp_func.draw()
-    #     self.rqa_measures = {
-    #         "RR": 'TBD',
-    #         "DET": 'TBD',
-    #         "L": 'TBD',
-    #         "Lmax": 'TBD',
-    #         "DIV": 'TBD',
-    #         "ENTR": 'TBD',
-    #         "LAM": 'TBD',
-    #         "TT": 'TBD'
-    #     }
-    #     self.display_rqa_measures()
-    #     if sum([self.check_var_x.get(),self.check_var_y.get(),self.check_var_z.get()]) == 2:
-    #         self.check_button_CRP.configure(state='normal')
-    #     else:
-    #         self.check_button_CRP.configure(state='disabled')
-    #         self.check_var_CRP.set(False)
+    def reset_func(self):
+        self.is_running = False
+        self.fig_live_data.clear()
+        self.fig_rp.clear()
+        self.fig_rqa.clear()
+        self.canvas_data.draw()
+        self.canvas_rp.draw()
+        self.canvas_rqa.draw()
+        self.__init__()
