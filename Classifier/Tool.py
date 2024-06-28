@@ -5,6 +5,84 @@ from sklearn.preprocessing import RobustScaler
 from preprocessing import load_data, prepare_datasets_multi_class, sliding_window_view
 from feature_extraction import pyrqa
 from classifier import train_multiclass_classifier
+
+def main():
+    # Constants (same as before)
+    m = 3
+    T = 2
+    epsilon = 0.5
+    l = 1000
+    delay = 100
+    num_samples = 50000
+    train_samples = 30000
+
+    # Load data (same as before)
+    healthy_data_path = 'Classifier/data/normal_3hp_1730rpm.csv'
+    inner_race_fault_007_path = 'Classifier/data/.007_inner_race.csv'
+    ball_fault_007_path = 'Classifier/data/.007_ball.csv'
+    outer_race_fault_007_path = 'Classifier/data/.007_centerd_6.csv'
+
+    healthy = load_data(healthy_data_path, 'X100_DE_time', num_samples)
+    inner_race_fault_007 = load_data(inner_race_fault_007_path, 'X121_DE_time', num_samples)
+    ball_fault_007 = load_data(ball_fault_007_path, 'X108_DE_time', num_samples)
+    outer_race_fault_007 = load_data(outer_race_fault_007_path, 'X133_DE_time', num_samples)
+
+    data = [healthy, ball_fault_007, inner_race_fault_007, outer_race_fault_007]
+    fault_names = ['Healthy', 'Ball fault', 'Inner race fault', 'Outer race fault']
+
+    # Feature extraction and dataset preparation
+    feature_func2 = lambda data: pyrqa(data, m, T, epsilon)
+    X_train, y_train = prepare_datasets_multi_class(data, l, delay, feature_func2, train_samples)
+
+    # Scale features
+    scaler = RobustScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+
+    # Train classifier
+    classifier = train_multiclass_classifier(X_train_scaled, y_train)
+
+    # Get feature importance
+    feature_importance = np.abs(classifier.coef_).sum(axis=0)
+    feature_importance = feature_importance / np.sum(feature_importance)
+
+    # Feature names
+    feature_names = ['RR', 'DET', 'L', 'TT', 'Lmax', 'DIV', 'ENTR', 'LAM']
+
+    # Plot feature importance
+    plt.figure(figsize=(12, 6))
+    plt.bar(feature_names, feature_importance)
+    plt.title('SVM Feature Importance')
+    plt.xlabel('Features')
+    plt.ylabel('Importance')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig('svm_feature_importance.png', dpi=300, bbox_inches='tight')
+    plt.show()
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+""" import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.svm import SVC
+from sklearn.preprocessing import RobustScaler
+from preprocessing import load_data, prepare_datasets_multi_class, sliding_window_view
+from feature_extraction import pyrqa
+from classifier import train_multiclass_classifier
 from matplotlib.colors import ListedColormap
 from matplotlib.lines import Line2D
 
@@ -83,11 +161,11 @@ def main():
     plt.scatter(support_vectors_proj[:, 0], support_vectors_proj[:, 1],
                 s=100, facecolors='none', edgecolors='k', linewidths=1.5, alpha=0.5)
 
-    # Remove axis labels and titles
-    plt.xticks([])
-    plt.yticks([])
-    plt.xlabel('')
-    plt.ylabel('')
+    # Add axis labels
+    plt.xlabel('Recurrence Rate (RR)', fontsize=12)
+    plt.ylabel('Determinism (DET)', fontsize=12)
+
+    # Remove title
     plt.title('')
 
     # Add legend with custom labels, colors, and shapes
@@ -99,13 +177,12 @@ def main():
     plt.legend(handles=legend_elements, loc="upper right")
 
     plt.tight_layout()
-    plt.savefig('svm_decision_boundary_custom_filled.png', dpi=300, bbox_inches='tight')
+    plt.savefig('svm_decision_boundary_custom_filled_with_labels.png', dpi=300, bbox_inches='tight')
     plt.show()
 
 if __name__ == "__main__":
     main()
-
-
+ """
 
 
 
