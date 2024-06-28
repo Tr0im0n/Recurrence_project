@@ -3,7 +3,7 @@ from scipy.spatial.distance import pdist, squareform
 from scipy.integrate import solve_ivp
 from itertools import groupby
 import matplotlib.pyplot as plt
-import simdat as sd
+import Classifier.data.simdat as sd
 import pandas as pd
 
 # -----------------------------------------------------------------------------------------------------------------------------------
