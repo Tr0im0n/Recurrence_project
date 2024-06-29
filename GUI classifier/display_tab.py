@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, scrolledtext
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from pyrqa.time_series import TimeSeries
 from pyrqa.settings import Settings
@@ -38,9 +38,12 @@ class dispTab:
         self.LAM = []
         self.TT = []
         self.fault_detected = 0
+        self.fault_memory = 0
+        self.fault_count = 0
 
         # load classifier
         self.classifier = joblib.load('/Users/martina/Documents/GitHub/Recurrence_project/classifier.joblib')
+        self.scaler = joblib.load('/Users/martina/Documents/GitHub/Recurrence_project/scaler.joblib')
 
         # create display tab
         self.disp_tab = tk.Frame(notebook, background='white')
@@ -90,11 +93,20 @@ class dispTab:
         self.canvas_data.get_tk_widget().pack(fill='both', expand=True, padx=10, pady=10)
 
         # set up maintenance warning display
-        self.warning_frame = tk.Frame(self.left_frame, background='white', bd=2, relief='solid', highlightbackground="black", highlightcolor="black",
-                         highlightthickness=1)
-        self.warning_frame.place(relx=0.1, rely=0.55, relwidth=0.8, relheight=0.4)
+        self.feedback_frame = tk.Frame(self.left_frame, background='white')
+        self.feedback_frame.place(relx=0.1, rely=0.55, relwidth=0.8, relheight=0.4)
 
-        self.warning_data()
+        self.warning_frame = tk.Frame(self.feedback_frame, background='white', bd=2, relief='solid', highlightbackground="black", highlightcolor="black",
+                         highlightthickness=1)
+        self.warning_frame.pack(fill='both', expand=True, padx=10, pady=10)
+
+        self.fault_log_frame = tk.Frame(self.feedback_frame, background='white')
+        self.fault_log_frame.pack(fill='x', padx=10)
+
+        self.fault_count_label = tk.Label(self.feedback_frame, text='Total number of faults detected: ')
+        self.fault_count_label.pack(expand=True, fill='x', padx=10)
+
+        self.feedback_frame_layout()
 
     def update_data_plot(self):
         if not self.is_running:
@@ -135,18 +147,34 @@ class dispTab:
             self.classifier_result()
             self.change_lights()
 
-    def warning_data(self):
+    def feedback_frame_layout(self):
+        # frame title
+        warning_title = tk.Label(self.warning_frame, text="Live Machine Status", fg="black", bg="white", font=("Arial", 24))
+        warning_title.pack()
         # set up red/green light
-        self.light_canvas = tk.Canvas(self.warning_frame, width = 175, height=100, background='white', highlightthickness=0)
+        self.light_canvas = tk.Canvas(self.warning_frame, width = 175, height=80, background='white', highlightthickness=0)
         self.light_canvas.pack()
 
-        self.green_light = self.light_canvas.create_oval(25, 25, 75, 75)
-        self.red_light = self.light_canvas.create_oval(100, 25, 150, 75)
+        self.green_light = self.light_canvas.create_oval(25, 15, 75, 65)
+        self.light_canvas.itemconfig(self.green_light, fill='gray')
+        self.red_light = self.light_canvas.create_oval(100, 15, 150, 65)
+        self.light_canvas.itemconfig(self.red_light, fill='gray')
 
         self.warning_message = tk.StringVar(value='Machine is happy')
 
-        self.warning_label = tk.Label(self.warning_frame, textvariable=self.warning_message)
+        self.warning_label = tk.Label(self.warning_frame, fg="black", bg="white", font=("Arial", 20), textvariable=self.warning_message)
         self.warning_label.pack()
+
+        # Create fault log
+        title_label = tk.Label(self.fault_log_frame, text="Fault History", font=("Arial", 14, "bold"))
+        title_label.pack(side=tk.TOP, fill='x')
+
+        self.fault_log_box = tk.Text(self.fault_log_frame, wrap=tk.WORD, width=50, height=15)
+        self.fault_log_box.pack(fill=tk.BOTH, expand=True)
+
+
+
+
 
     def change_lights(self):
         if self.fault_detected == 0:
@@ -160,11 +188,11 @@ class dispTab:
         elif self.fault_detected == 2:
             self.light_canvas.itemconfig(self.red_light, fill='red')
             self.light_canvas.itemconfig(self.green_light, fill='gray')
-            self.warning_message.set('Ball fault')
         elif self.fault_detected == 3:
             self.light_canvas.itemconfig(self.red_light, fill='red')
             self.light_canvas.itemconfig(self.green_light, fill='gray')
             self.warning_message.set('Outer Race Fault')
+
 
     def right_window_layout(self):
         # set up recurrence plot figure
@@ -195,7 +223,7 @@ class dispTab:
         # plot recurrence matrix
         im = ax_rp.imshow(self.recurrence_matrix, cmap='binary', origin='lower')
         # self.fig_rp.colorbar(im, ax=ax_rp)
-        # ax_rp.set_title(f"Recurrence Plot")
+        ax_rp.set_title(f"Recurrence Plot")
         ax_rp.set_xlabel("Vector Index")
         ax_rp.set_ylabel("Vector Index")
         self.fig_rp.tight_layout()
@@ -274,10 +302,21 @@ class dispTab:
         self.canvas_rqa.draw()
 
     def classifier_result(self):
-        scaler = StandardScaler()
-        self.rqa_measures_scaled = scaler.fit_transform(self.rqa_measures)
-        self.fault_detected = self.classifier.predict(self.rqa_measures.reshape(1, -1))
-        print(self.fault_detected)
+        self.rqa_measures_scaled = self.scaler.transform(self.rqa_measures)
+        self.fault_detected = self.classifier.predict(self.rqa_measures_scaled.reshape(1, -1))
+        self.detection_time = round(time() - self.start_time, 2)
+
+        # add new faults to fault log
+        if self.fault_detected != 0 and self.fault_detected != self.fault_memory:
+            fault_type = ['Inner Race', 'Ball', 'Outer Race']
+            fault_index = int(self.fault_detected) - 1
+            self.fault_log_box.insert(tk.END,
+                                      f'Fault Detected: {fault_type[fault_index]} Fault at {self.detection_time} s' + '\n')
+            self.fault_log_box.yview(tk.END)  # Scroll to the end
+            self.fault_count += 1
+        self.fault_memory = self.fault_detected
+        # add detected fault to log
+
 
     def start_func(self):
         if not self.is_running:
