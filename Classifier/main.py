@@ -25,9 +25,9 @@ def manual_test(classifier, scaler, data, window_size, delay, feature_func2, sta
 
 def main():
     # Constants
-    m = 3  # Embedding dimension
+    m = 15  # Embedding dimension
     T = 2  # Delay
-    epsilon = 0.5  # Threshold
+    epsilon = 0.75  # Threshold
     l = 1000  # Window size
     delay = 200  # Delay before calculating next RP
     num_samples = 50000  # Total number of samples
