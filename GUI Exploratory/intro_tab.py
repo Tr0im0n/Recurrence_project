@@ -30,7 +30,7 @@ class introTab:
         }
 
         # create function tab
-        self.intro_tab = tk.Frame(notebook)
+        self.intro_tab = ttk.Frame(notebook)
         notebook.add(self.intro_tab, text='Intro to RPs')
         self.create_intro_tab()
 
@@ -47,15 +47,13 @@ class introTab:
         self.sine_frame = ttk.Frame(self.command_frame)
         self.sine_frame.pack()
 
-        self.noise_frame = ttk.Frame(self.command_frame)
-        self.noise_frame.pack()
-
-        self.spike_frame = ttk.Frame(self.command_frame)
-        self.spike_frame.pack()
+        self.modifications_frame = ttk.Frame(self.command_frame)
+        self.modifications_frame.pack()
 
         self.create_param_frame()
         self.create_sine_frame()
         self.create_display_frame()
+        self.create_modifications_frame()
         self.plot_function()
         self.plot_rp()
 
@@ -100,7 +98,6 @@ class introTab:
         self.frequency_var1 = tk.DoubleVar(value=1)
         self.phase_var1 = tk.DoubleVar(value=0)
         self.vertical_var1 = tk.DoubleVar(value=0)
-
 
         row_frame1 = ttk.Frame(self.sine_frame, padding="5 5 5 5")
         row_frame1.grid(row=1, column=0, sticky=(tk.W, tk.E))
@@ -184,19 +181,59 @@ class introTab:
         vertical_shift_entry = ttk.Entry(row_frame3, width=5, textvariable=self.vertical_var3)
         vertical_shift_entry.pack(side='left')
 
-        self.plot_button = ttk.Button(self.intro_tab, text='plot', command=self.plot_function)
+    def create_modifications_frame(self):
+        self.modify_title = ttk.Label(self.modifications_frame, text='Modify signal', font=('Arial', 24))
+        self.modify_title.pack()
+
+        # modify signal with single spike
+        spike_row = ttk.Frame(self.modifications_frame)
+        spike_row.pack()
+
+        self.get_spike = tk.BooleanVar()
+
+        self.get_spike_label = ttk.Label(spike_row, text='Introduce Spike: ')
+        self.get_spike_label.pack(side='left', pady=(10, 0))
+
+        self.get_spike_box = ttk.Checkbutton(spike_row, variable=self.get_spike)
+        self.get_spike_box.pack(side='left', pady=(10, 0))
+
+        self.plot_button = ttk.Button(self.intro_tab, text='plot', command=self.plot)
         self.plot_button.pack()
+
+        #modify signal with noise
+        noise_frame = ttk.Frame(self.modifications_frame)
+        noise_frame.pack()
+
+        self.noise_level_var = tk.IntVar(value=20)  # Default value as midpoint
+
+        ttk.Label(noise_frame, text="Level of noise (dB):").pack(side='left')
+
+        self.noise_level_scale = ttk.Scale(noise_frame, from_=0, to=30, orient='horizontal',
+                                           variable=self.noise_level_var)
+        self.noise_level_scale.pack(side='left')
+
+        ttk.Label(noise_frame, textvariable=self.noise_level_var).pack(side='left')
+
+
+
+
 
     def create_display_frame(self):
         self.fig_func = plt.Figure()
 
         self.canvas_func = FigureCanvasTkAgg(self.fig_func, master=self.display_frame)
-        self.canvas_func.get_tk_widget().pack(fill='both', expand=True)
+        # self.canvas_func.get_tk_widget().pack(fill='both', expand=True)
+        self.canvas_func.get_tk_widget().place(relx=0, rely=0, relheight=0.5, relwidth=1)
 
         self.fig_rp = plt.Figure()
 
-        self.canvas_func = FigureCanvasTkAgg(self.fig_rp, master=self.display_frame)
-        self.canvas_func.get_tk_widget().pack(fill='both', expand=True)
+        self.canvas_rp = FigureCanvasTkAgg(self.fig_rp, master=self.display_frame)
+        # self.canvas_rp.get_tk_widget().pack(fill='both', expand=True)
+        self.canvas_rp.get_tk_widget().place(relx=0, rely=0.5, relheight=0.5, relwidth=1)
+
+    def plot(self):
+        self.plot_function()
+        self.plot_rp()
 
     def plot_function(self):
         xs = np.linspace(0, 2 * np.pi, 1000)  # Adjust range to fit typical sine wave periods
@@ -205,11 +242,24 @@ class introTab:
         sin2 = self.amplitude_var2.get() * np.sin(self.frequency_var2.get() * xs + self.phase_var2.get()) + self.vertical_var2.get()
         sin3 = self.amplitude_var3.get() * np.sin(self.frequency_var3.get() * xs + self.phase_var3.get()) + self.vertical_var3.get()
 
-        sin = (sin1*int(self.sin1_active.get())) + (sin2*int(self.sin2_active.get())) + (sin3*int(self.sin3_active.get()))
+        self.data = (sin1*int(self.sin1_active.get())) + (sin2*int(self.sin2_active.get())) + (sin3*int(self.sin3_active.get()))
+
+        # add spike
+        if self.get_spike.get() == True:
+            spike_position = np.random.randint(100, len(xs) - 100)  # Random position for the spike
+            spike_amplitude = 2 * np.max(self.data)  # Amplitude of the spike
+            self.data[spike_position:spike_position + 10] += spike_amplitude  # Introduce the spike
+
+        # add noise
+        max_amp = np.max(self.data)
+        noise_amp = max_amp / (10 ** (self.noise_level_var.get() / 20))
+        self.noise = np.random.uniform(-noise_amp, noise_amp, (len(self.data),))
+
+        self.data += self.noise
 
         self.fig_func.clear()
         ax_func = self.fig_func.add_subplot(111)
-        ax_func.plot(xs, sin, lw=0.5)
+        ax_func.plot(xs, self.data, lw=0.5)
         ax_func.set_title("Function")
         ax_func.set_xlabel("X Axis")
         ax_func.set_ylabel("Y Axis")
@@ -218,27 +268,32 @@ class introTab:
         self.canvas_func.draw()
 
     def plot_rp(self):
-        pass
-        # self.m = self.embedding_dim_var.get()
-        # self.T = self.time_delay_var.get()
-        # self.epsilon = self.threshold_var.get()
-        #
-        # # embed time series
-        # self.num_vectors = len(data) - (self.m - 1) * self.T
-        # self.vectors = np.array([data[t:t + self.m * self.T:self.T] for t in range(self.num_vectors)])
-        #
-        # if self.vectors.size > 0:  # check that enough points exist to create recurrence plot
-        #     # create and normalize similarity matrix
-        #     self.D = squareform(pdist(self.vectors, metric='euclidean'))
-        #     D_max = np.max(self.D)
-        #     self.D_norm = self.D / D_max
-        #
-        #     # create recurrence matrix
-        #     if self.threshold_check_var.get():
-        #         recurrence_matrix = self.D_norm < self.epsilon
-        #     else:
-        #         recurrence_matrix = self.D_norm
-        #     return recurrence_matrix
+        self.m = self.embedding_dim_var.get()
+        self.T = self.time_delay_var.get()
+        self.epsilon = self.threshold_var.get()
+
+        # embed time series
+        self.num_vectors = len(self.data) - (self.m - 1) * self.T
+        self.vectors = np.array([self.data[t:t + self.m * self.T:self.T] for t in range(self.num_vectors)])
+
+        if self.vectors.size > 0:  # check that enough points exist to create recurrence plot
+            # create and normalize similarity matrix
+            self.D = squareform(pdist(self.vectors, metric='euclidean'))
+            D_max = np.max(self.D)
+            self.D_norm = self.D / D_max
+
+            # create recurrence matrix
+            recurrence_matrix = self.D_norm < self.epsilon
+
+        self.fig_rp.clear()
+        ax_func = self.fig_rp.add_subplot(111)
+        ax_func.imshow(recurrence_matrix, cmap='binary', origin='lower')
+        ax_func.set_title("Function")
+        ax_func.set_xlabel("X Axis")
+        ax_func.set_ylabel("Y Axis")
+        self.fig_func.tight_layout()
+
+        self.canvas_rp.draw()
 
 
 

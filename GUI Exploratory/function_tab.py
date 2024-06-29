@@ -528,10 +528,10 @@ class funcTab:
         # plot recurrence matrix
         im = ax_rp_func.imshow(recurrence_matrix, cmap='binary', origin='lower')
         self.fig_rp_func.colorbar(im, ax=ax_rp_func)
-        ax_rp_func.set_title(f"{type} Plot")
+        # ax_rp_func.set_title(f"{type} Plot")
         ax_rp_func.set_xlabel("Vector Index")
         ax_rp_func.set_ylabel("Vector Index")
-        self.fig_rp_func.savefig('cross_recurrence_plot.py', dpi=500)
+        self.fig_rp_func.savefig('cross_recurrence_plot.png', dpi=500)
 
     def calculate_rqa(self, recurrence_matrix):
         self.rqa_measures = calculate_rqa_measures_pyrqa(self.vectors, self.m, self.T, self.epsilon)
