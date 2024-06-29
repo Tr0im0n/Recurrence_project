@@ -75,8 +75,7 @@ if __name__ == "__main__":
 
 
 
-
-""" import numpy as np
+import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.svm import SVC
 from sklearn.preprocessing import RobustScaler
@@ -108,7 +107,7 @@ def main():
     outer_race_fault_007 = load_data(outer_race_fault_007_path, 'X133_DE_time', num_samples)
 
     data = [healthy, ball_fault_007, inner_race_fault_007, outer_race_fault_007]
-    fault_names = ['Healthy', 'Ball fault', 'Inner race fault', 'Outer race fault']
+    fault_names = ['Healthy', 'Inner race fault', 'Ball fault', 'Outer race fault']
 
     # Feature extraction and dataset preparation (same as before)
     feature_func2 = lambda data: pyrqa(data, m, T, epsilon)
@@ -140,21 +139,20 @@ def main():
     Z = classifier.predict(full_mesh_points)
     Z = Z.reshape(xx.shape)
 
-    # Set up custom colors and markers
+    # Set up custom colors
     light_grey = '#D3D3D3'
     dark_turquoise = '#00CED1'
     custom_cmap = ListedColormap([light_grey, dark_turquoise, '#FF69B4', dark_turquoise])
-    markers = ['o', 's', '^', 'p']  # circle, square, triangle, pentagon
     colors = ['#000000', '#0000FF', '#FF0000', '#008000']  # black, blue, red, green
 
     # Plot the decision boundary and training points
     plt.figure(figsize=(12, 8))
     plt.contourf(xx, yy, Z, alpha=0.8, cmap=custom_cmap)
 
-    # Plot the training points with different shapes and filled markers
-    for i, (marker, color) in enumerate(zip(markers, colors)):
+    # Plot the training points with circle markers and filled markers
+    for i, color in enumerate(colors):
         mask = y_train == i
-        plt.scatter(rr[mask], det[mask], c=color, marker=marker, s=60, edgecolor='black')
+        plt.scatter(rr[mask], det[mask], c=color, marker='o', s=60, edgecolor='black')
 
     # Plot the support vectors (projected onto RR and DET)
     support_vectors_proj = classifier.support_vectors_[:, :2]
@@ -168,8 +166,8 @@ def main():
     # Remove title
     plt.title('')
 
-    # Add legend with custom labels, colors, and shapes
-    legend_elements = [Line2D([0], [0], marker=markers[i], color='w', label=fault_names[i], 
+    # Add legend with custom labels and colors (all using circle markers)
+    legend_elements = [Line2D([0], [0], marker='o', color='w', label=fault_names[i], 
                               markerfacecolor=colors[i], markersize=10, markeredgecolor='black') 
                        for i in range(len(fault_names))]
     legend_elements.append(Line2D([0], [0], marker='o', color='w', markerfacecolor='none', 
@@ -177,20 +175,17 @@ def main():
     plt.legend(handles=legend_elements, loc="upper right")
 
     plt.tight_layout()
-    plt.savefig('svm_decision_boundary_custom_filled_with_labels.png', dpi=300, bbox_inches='tight')
+    plt.savefig('svm_decision_boundary_circles_with_labels.png', dpi=400, bbox_inches='tight')
     plt.show()
 
 if __name__ == "__main__":
     main()
- """
 
 
 
 
 
-
-
-
+"""
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -301,3 +296,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+"""
