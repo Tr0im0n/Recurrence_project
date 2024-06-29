@@ -25,9 +25,9 @@ def manual_test(classifier, scaler, data, window_size, delay, feature_func2, sta
 
 def main():
     # Constants
-    m = 20  # Embedding dimension
+    m = 3  # Embedding dimension
     T = 2  # Delay
-    epsilon = 0.7  # Threshold
+    epsilon = 0.5  # Threshold
     l = 1000  # Window size
     delay = 200  # Delay before calculating next RP
     num_samples = 50000  # Total number of samples
@@ -72,11 +72,11 @@ def main():
     dump(classifier, 'classifier.joblib')
     dump(scaler, 'scaler.joblib')
 
-    # Manual testing on each fault type
-    for i, (fault_data, fault_name) in enumerate(zip(data, fault_names)):
-        test_preds = manual_test(classifier, scaler, fault_data, l, delay, feature_func2, train_samples)
-        accuracy = np.mean(test_preds == i)
-        print(f"Accuracy on {fault_name}: {accuracy:.4f}")
+    # # Manual testing on each fault type
+    # for i, (fault_data, fault_name) in enumerate(zip(data, fault_names)):
+    #     test_preds = manual_test(classifier, scaler, fault_data, l, delay, feature_func2, train_samples)
+    #     accuracy = np.mean(test_preds == i)
+    #     print(f"Accuracy on {fault_name}: {accuracy:.4f}")
 
     # Test on Frankenstein dataset
     # classifier = load('GUI classifier/classifier.joblib')
