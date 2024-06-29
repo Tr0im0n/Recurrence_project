@@ -36,7 +36,7 @@ sigma, rho, beta = 10, 28, 8/3
 a, b, c = 0.2, 0.2, 5.7
 initial_state = [1.0, 1.0, 1.0]
 t_span = (0, 40)
-t_eval = np.linspace(t_span[0], t_span[1], num=1000)
+t_eval = np.linspace(t_span[0], t_span[1], num=10000)
 m, T, epsilon = 2, 1, 10  # Embedding dimension, time delay, and distance threshold
 
 # Simulate systems
@@ -49,7 +49,5 @@ crp = CRP(lorenz_series, roessler_series, m, T, epsilon)
 # Plotting
 plt.figure(figsize=(8, 8))
 plt.imshow(crp, cmap='Greys', origin='lower')
-plt.xlabel('Rössler System Index')
-plt.ylabel('Lorenz System Index')
-plt.title('Cross Recurrence Plot Between Lorenz and Rössler Systems')
+plt.savefig('crp.png', dpi = 400)
 plt.show()
