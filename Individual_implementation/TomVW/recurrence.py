@@ -2,7 +2,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy
-from matplotlib.widgets import Slider, Button
 from pyts.image import RecurrencePlot
 from scipy.spatial.distance import pdist, squareform, cdist
 from scipy.signal import convolve2d
@@ -212,10 +211,19 @@ def view_cdist(signal: np.ndarray, m: int = 5, t: int = 1):
 
 def stride_cdist(signal: np.ndarray, m: int = 5, t: int = 1):
     new_shape = signal.shape[0] - (m - 1) * t
-    result = np.lib.stride_tricks.as_strided(signal,
+    stride = np.lib.stride_tricks.as_strided(signal,
                                              shape=(new_shape, m),
                                              strides=(signal.strides[0], signal.strides[0] * t))
-    return cdist(result, result, metric='euclidean')
+    return cdist(stride, stride, metric='euclidean')
+
+
+def stride_cdist_contiguous(signal: np.ndarray, m: int = 5, t: int = 1):
+    new_shape = signal.shape[0] - (m - 1) * t
+    stride = np.lib.stride_tricks.as_strided(signal,
+                                             shape=(new_shape, m),
+                                             strides=(signal.strides[0], signal.strides[0] * t))
+    contiguous = np.ascontiguousarray(stride)
+    return cdist(contiguous, contiguous, metric='euclidean')
 
 
 def martina2(signal: np.ndarray, m: int = 5, t: int = 1):
@@ -224,21 +232,112 @@ def martina2(signal: np.ndarray, m: int = 5, t: int = 1):
     return squareform(pdist(vectors, metric='euclidean'))
 
 
-def threshold(distance_matrix: np.ndarray, epsilon: float = 0.1):
+def view_cdist_threshold(signal: np.ndarray, m: int = 5, t: int = 1, epsilon: float = 0.1):
+    new_shape = signal.shape[0] - (m - 1) * t
+    indices = np.arange(new_shape)[:, None] + np.arange(0, m * t, t)
+    result = signal[indices]
+    distance_matrix = cdist(result, result, metric='euclidean')
     return distance_matrix < epsilon
 
 
-def threshold_cast(distance_matrix: np.ndarray, epsilon: float = 0.1):
+def view_cdist_threshold_cast(signal: np.ndarray, m: int = 5, t: int = 1, epsilon: float = 0.1):
+    new_shape = signal.shape[0] - (m - 1) * t
+    indices = np.arange(new_shape)[:, None] + np.arange(0, m * t, t)
+    result = signal[indices]
+    distance_matrix = cdist(result, result, metric='euclidean')
     return (distance_matrix < epsilon).astype(int)
 
 
-def threshold_ip(distance_matrix: np.ndarray, epsilon: float = 0.1):
-    """
-    ip stands for in place, shouldn't need the return
-    """
-    distance_matrix[distance_matrix >= epsilon] = 1
+def view_cdist_threshold_ip(signal: np.ndarray, m: int = 5, t: int = 1, epsilon: float = 0.1):
+    new_shape = signal.shape[0] - (m - 1) * t
+    indices = np.arange(new_shape)[:, None] + np.arange(0, m * t, t)
+    result = signal[indices]
+    distance_matrix = cdist(result, result, metric='euclidean')
     distance_matrix[distance_matrix < epsilon] = 0
+    distance_matrix[distance_matrix >= epsilon] = 1
     return distance_matrix
+
+
+def compare_all(n_samples: int = 8_000, m: int = 5):
+    time_obj = TimeObject()
+    my_signal = composite_signal(n_samples, ((0.001, 4), (0.002, 2), (0.004, 1)))    # ((1, 4), (2, 2), (4, 1))
+    funcs = [
+        stride_cdist,
+        view_cdist,
+        stride_cdist_contiguous,
+        # hankel_pdist,
+        # martina,
+        # hankel_kron_norm,
+        # double_for_loop_hankel,
+        # double_for_loop_length_matrix,
+        # convolve_triangle_shift,
+        # convolve_diagonal,
+        # carl,
+        # test3,
+        # package,
+        # martina2
+        ]
+    rps = []
+    time_obj.new("Setup")
+    for func in funcs:
+        rps.append(func(my_signal, m))
+        time_obj.new(f"{func.__name__}")
+
+    durations = time_obj.time_list[-2:]
+
+    fig, axs = plt.subplots(2, 2)
+    fig.suptitle(f"Samples: {n_samples}")
+    for ax, rp, duration, func in zip(axs.flat, rps, durations, funcs):
+        ax.imshow(rp, cmap="gray", origin="lower")
+        ax.set_title(f"{func.__name__}:\n{duration:.6f}")
+    time_obj.new("Plotting")
+    plt.show()
+
+
+def compare_samples_vs_time(max_size: int = 10_001, m: int = 5, t: int = 2):
+    time_obj = TimeObject()
+    my_signal = composite_signal(max_size, ((0.01, 4), (0.02, 2), (0.04, 1)))
+    step_size = 500
+    sizes = np.arange(5_000, max_size, step_size)
+    funcs = [
+        # view_cdist,
+        # stride_cdist,
+        # stride_cdist_contiguous,
+        view_cdist_threshold_ip,
+        view_cdist_threshold_cast,
+        view_cdist_threshold
+    ]
+    time_obj.new("setup")
+    for size in sizes:
+        for func in funcs:
+            func(my_signal[:size], m, t)
+            time_obj.new(f"{func.__name__}")
+
+    fig, ax = plt.subplots(figsize=(6, 6), dpi=200)
+    for i, func in enumerate(funcs):
+        ax.plot(sizes, time_obj.time_list[i+1::3], label=f"{func.__name__}")
+    ax.set_xlabel("Amount of samples (#)")
+    ax.set_ylabel("Time (s)")
+    ax.legend()
+    plt.show()
+
+
+if __name__ == "__main__":
+    # compare_all()
+    compare_samples_vs_time()
+
+
+"""
+
+plt.plot(xs, total_signal)
+plt.title("Sum of 3 sine-waves, with frequencies 1, 2 and 4")
+plt.show()
+
+10.000 points: 
+Setup duration: 5.040192
+Convolution duration: 5.585044
+Reshape duration: 2.404099
+Add 2 halves duration: 2.219247
 
 
 def epsilon_slider():
@@ -286,98 +385,25 @@ def epsilon_slider():
     plt.show()
 
 
-def compare_all(n_samples: int = 4_000, m: int = 5):
-    time_obj = TimeObject()
-    my_signal = composite_signal(n_samples, ((0.001, 4), (0.002, 2), (0.004, 1)))    # ((1, 4), (2, 2), (4, 1))
-    funcs = [view_cdist,
-             # hankel_pdist,
-             # martina,
-             # hankel_kron_norm,
-             # double_for_loop_hankel,
-             # double_for_loop_length_matrix,
-             # convolve_triangle_shift,
-             # convolve_diagonal,
-             # carl,
-             # test3,
-             # package,
-             # stride_cdist,
-             martina2]
-    rps = []
-    time_obj.new("Setup")
-    for func in funcs:
-        rps.append(func(my_signal, m))
-        time_obj.new(f"{func.__name__}")
+def test3(signal: np.ndarray, m: int = 5, t: int = 1):
+    No clue what this is, think trying the fancy slow method
+    old_length = signal.shape[0]
+    new_length = old_length - (m - 1) * t
+    signal = signal.reshape(old_length, 1)
+    my_distances = cdist(signal, signal, "euclidean")
+    flat_distances = my_distances.reshape(1, old_length*old_length)
+    # starting_indices = np.arange(new_length*old_length)
+    # single_tile = np.ones(old_length)
+    # single_tile[new_length:] = np.zeros((m - 1) * t)
+    pattern_indices = np.arange(new_length)
+    full_block_indices = np.concatenate([pattern_indices + i * old_length for i in range(new_length)])
+    # full_block_indices = np.concatenate([np.arange(i*old_length, i*old_length + new_length) for i in range(new_length)])
 
-    durations = time_obj.time_list[-2:]
+    indices = full_block_indices[:, None] + np.arange(0, m*(old_length+1), old_length+1)
+    my_view = flat_distances[indices]
+    result = np.sum(my_view, axis=1)
+    return result.reshape((new_length, new_length))
 
-    fig, axs = plt.subplots(1, 2)
-    fig.suptitle(f"Samples: {n_samples}")
-    for ax, rp, duration, func in zip(axs.flat, rps, durations, funcs):
-        ax.imshow(rp, cmap="gray", origin="lower")
-        ax.set_title(f"{func.__name__}:\n{duration:.6f}")
-    time_obj.new("Plotting")
-
-    print(np.array_equal(rps[0], rps[1]))
-    fig2, ax2 = plt.subplots(1, 1)
-    ax2.imshow(rps[0]-rps[1], cmap="gray", origin="lower")
-    plt.show()
-
-
-def view_cdist_vs_time(max_samples: int = 8_000, m: int = 5):
-    my_signal = composite_signal(max_samples, ((0.01, 4), (0.02, 2), (0.04, 1)))    # ((1, 4), (2, 2), (4, 1))
-    rps = []
-    sizes = np.arange(4_000, max_samples+1, 500)
-    time_obj = TimeObject()
-    for size in sizes:
-        for func in (stride_cdist, view_cdist):
-            # rps.append(func(my_signal[:size], m))
-            func(my_signal[:size], m)
-            time_obj.new("")
-
-    # my_len = int(len(time_obj.time_list)/2)
-
-    fig, ax = plt.subplots(1, 1)
-    fig.suptitle(f"{view_cdist.__name__}")
-    ax.plot(sizes, time_obj.time_list[1::2], label=f"{view_cdist.__name__}")
-    ax.plot(sizes, time_obj.time_list[0::2], label=f"{stride_cdist.__name__}")
-    ax.set_xlabel("Amount of samples (#)")
-    ax.set_ylabel("Time (s)")
-    ax.legend()
-    plt.show()
-
-
-def compare_threshold(n_samples: int = 4_000):
-    time_obj = TimeObject()
-    my_signal = composite_signal(n_samples, ((0.001, 4), (0.002, 2), (0.004, 1)))
-    rp = view_cdist(my_signal)
-    funcs = [threshold,
-             threshold_cast,
-             threshold_ip]
-    time_obj.new("setup")
-    for func in funcs:
-        func(rp)
-        time_obj.new(func.__name__)
-
-
-
-
-if __name__ == "__main__":
-    # compare_all()
-    # view_cdist_vs_time()
-    compare_threshold()
-
-
-"""
-
-plt.plot(xs, total_signal)
-plt.title("Sum of 3 sine-waves, with frequencies 1, 2 and 4")
-plt.show()
-
-10.000 points: 
-Setup duration: 5.040192
-Convolution duration: 5.585044
-Reshape duration: 2.404099
-Add 2 halves duration: 2.219247
 
 """
 
