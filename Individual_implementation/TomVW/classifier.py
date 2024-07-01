@@ -52,10 +52,10 @@ def csv_to_sheet(file_name: str, i: int = 0, n_amount: int = 10_000, window_size
     del df
     strided_time_series = stride_array(time_series, window_size, step)
     # rqas = np.apply_along_axis(rqas_from_time_series, 1, strided_time_series)
-    rqas = np.zeros((20, 8))
-    for i in range(20):
-        rqas[0] = my_pyrqa(strided_time_series[i])
-    # rqas = np.apply_along_axis(my_pyrqa, 1, strided_time_series)
+    # rqas = np.zeros((20, 8))
+    # for i in range(20):
+    #     rqas[0] = my_pyrqa(strided_time_series[i])
+    rqas = np.apply_along_axis(my_pyrqa, 1, strided_time_series)
     # np.savetxt(r"Figures/data.csv", rqas, delimiter=',')
     print("done with rqas")
     df_rqas = pd.DataFrame(rqas, columns=rqa_names)
@@ -68,7 +68,7 @@ def csv_to_sheet(file_name: str, i: int = 0, n_amount: int = 10_000, window_size
 def csv_to_xlsx():
     file_name = "Figures/rqas00.xlsx"
     for i in range(6):
-        csv_to_sheet(file_name, i, 10_001)
+        csv_to_sheet(file_name, i, 100_001)
         print(i)
 
 
@@ -93,7 +93,7 @@ def xlsx_to_png():
 
 
 if __name__ == "__main__":
-    os.chdir(r"../..")
+    # os.chdir(r"../..")
     csv_to_xlsx()
     # xlsx_to_png()
 
