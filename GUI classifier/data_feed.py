@@ -11,9 +11,6 @@ def make_window(path, time, window_size):
     data = csv_data.iloc[:,0]
     labels = csv_data.iloc[:, 1]
 
-    data_max = np.max(data)
-    norm_data = data / data_max
-
     sampling_rate = 12000 # in Herz (samples/second)
 
     # points wrap around data

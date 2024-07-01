@@ -14,11 +14,12 @@ from scipy.stats import entropy
 import joblib
 import threading
 
-
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import tkinter.filedialog as fd
+
+from settings_tab import settingsTab
 
 class dispTab:
     def __init__(self, root, notebook):
@@ -28,30 +29,43 @@ class dispTab:
 
         # Initialize variables
         self.is_running = False
-        self.path = '/Users/martina/Documents/GitHub/Recurrence_project/datasets/classefiergui.csv'
+
+        # lists to keep track of RQA values
         self.RR = []
         self.DET = []
         self.L = []
-        self.Lmax=[]
+        self.Lmax = []
         self.DIV = []
         self.ENTR = []
         self.LAM = []
         self.TT = []
+
+        # variables to manage fault detection
         self.fault_detected = 0
         self.fault_memory = 0
         self.fault_count = 0
 
-        # load classifier
+        # variables to manage data type
+        self.type_of_data = tk.IntVar(value=0)
+        self.file_path_extension = ['healthy.csv', 'ball.csv', 'inner.csv', 'outer.csv']
+        self.type_of_data_history = []
+        self.colors = ['green', 'blue', 'red', 'orange']
+
+        # load classifier and scaler
         self.classifier = joblib.load('/Users/martina/Documents/GitHub/Recurrence_project/classifier.joblib')
         self.scaler = joblib.load('/Users/martina/Documents/GitHub/Recurrence_project/scaler.joblib')
+
+        # create menu bar
+        self.create_menu_bar()
 
         # create display tab
         self.disp_tab = tk.Frame(notebook, background='white')
         notebook.add(self.disp_tab, text='Live Window')
         self.create_disp_tab()
 
-        # create menu bar
-        self.create_menu_bar()
+        # create instance of settings_tab
+        self.settings_tab = settingsTab(self.root, self.notebook)
+
 
 
     def create_menu_bar(self):
@@ -61,7 +75,7 @@ class dispTab:
         file_menu = tk.Menu(menu_bar, tearoff=0)
         file_menu.add_command(label="Start", command=self.start_func)
         file_menu.add_command(label="Stop", command=self.stop_func)
-        # file_menu.add_command(label='Reset', command=self.reset_func)
+        file_menu.add_command(label='Reset', command=self.reset_func)
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.root.quit)
 
@@ -86,18 +100,23 @@ class dispTab:
     def left_window_layout(self):
         # set up live plot figure
         self.live_plot_frame = tk.Frame(self.left_frame, background='white')
-        self.live_plot_frame.place(relx=0, rely=0, relwidth=1, relheight=0.5)
+        self.live_plot_frame.place(relx=0, rely=0, relwidth=1, relheight=0.4)
+
+        self.select_data_frame = tk.Frame(self.left_frame, background='white')
+        self.select_data_frame.place(relx=0, rely=0.4, relwidth=1, relheight=0.1)
 
         self.fig_live_data = plt.Figure()
         self.canvas_data = FigureCanvasTkAgg(self.fig_live_data, master=self.live_plot_frame)
         self.canvas_data.get_tk_widget().pack(fill='both', expand=True, padx=10, pady=10)
+        self.select_data_layout()
 
         # set up maintenance warning display
         self.feedback_frame = tk.Frame(self.left_frame, background='white')
         self.feedback_frame.place(relx=0.1, rely=0.55, relwidth=0.8, relheight=0.4)
 
-        self.warning_frame = tk.Frame(self.feedback_frame, background='white', bd=2, relief='solid', highlightbackground="black", highlightcolor="black",
-                         highlightthickness=1)
+        self.warning_frame = tk.Frame(self.feedback_frame, background='white', bd=2, relief='solid',
+                                      highlightbackground="black", highlightcolor="black",
+                                      highlightthickness=1)
         self.warning_frame.pack(fill='both', expand=True, padx=10, pady=10)
 
         self.fault_log_frame = tk.Frame(self.feedback_frame, background='white')
@@ -115,26 +134,23 @@ class dispTab:
         current_time = time()
         elapsed_time = round(current_time - self.start_time, 1)
 
+        path = '/Users/martina/Documents/GitHub/Recurrence_project/datasets/' + self.file_path_extension[self.type_of_data.get()]
+
         # get data window
         window_size = 1000
-        self.data, self.labels = make_window(self.path, elapsed_time, window_size)
-
-        colors = {1: 'green', 2: 'blue', 3: 'red'}
+        self.data, self.labels = make_window(path, elapsed_time, window_size)
 
         # plot phase space of function
         self.fig_live_data.clear()
         ax_ps = self.fig_live_data.add_subplot(111)
 
         # plot points with color corresponding to error types
-        for label in colors:
-            label_data = self.data[self.labels == label]
-            ax_ps.plot(label_data.index, label_data, c=colors[label], lw=0.5, label=f'Label {label}')
+        ax_ps.plot(self.data.index, self.data, c=self.colors[self.type_of_data.get()], lw=0.5)
 
-        # ax_ps.plot(t, self.data,lw=0.5)
         ax_ps.set_title("Live data")
         ax_ps.set_xlabel("Time")
         ax_ps.set_ylabel("Data")
-        ax_ps.set_ylim(-1, 1)
+        ax_ps.set_ylim(-2, 2)
         self.fig_live_data.tight_layout()
         self.fig_live_data.savefig('live_data.png')
 
@@ -149,10 +165,12 @@ class dispTab:
 
     def feedback_frame_layout(self):
         # frame title
-        warning_title = tk.Label(self.warning_frame, text="Live Machine Status", fg="black", bg="white", font=("Arial", 24))
+        warning_title = tk.Label(self.warning_frame, text="Live Machine Status", fg="black", bg="white",
+                                 font=("Arial", 24))
         warning_title.pack()
         # set up red/green light
-        self.light_canvas = tk.Canvas(self.warning_frame, width = 175, height=80, background='white', highlightthickness=0)
+        self.light_canvas = tk.Canvas(self.warning_frame, width=175, height=80, background='white',
+                                      highlightthickness=0)
         self.light_canvas.pack()
 
         self.green_light = self.light_canvas.create_oval(25, 15, 75, 65)
@@ -162,7 +180,8 @@ class dispTab:
 
         self.warning_message = tk.StringVar(value='Machine is happy')
 
-        self.warning_label = tk.Label(self.warning_frame, fg="black", bg="white", font=("Arial", 20), textvariable=self.warning_message)
+        self.warning_label = tk.Label(self.warning_frame, fg="black", bg="white", font=("Arial", 20),
+                                      textvariable=self.warning_message)
         self.warning_label.pack()
 
         # Create fault log
@@ -171,10 +190,6 @@ class dispTab:
 
         self.fault_log_box = tk.Text(self.fault_log_frame, wrap=tk.WORD, width=50, height=15)
         self.fault_log_box.pack(fill=tk.BOTH, expand=True)
-
-
-
-
 
     def change_lights(self):
         if self.fault_detected == 0:
@@ -188,11 +203,32 @@ class dispTab:
         elif self.fault_detected == 2:
             self.light_canvas.itemconfig(self.red_light, fill='red')
             self.light_canvas.itemconfig(self.green_light, fill='gray')
+            self.warning_message.set('Ball Fault')
         elif self.fault_detected == 3:
             self.light_canvas.itemconfig(self.red_light, fill='red')
             self.light_canvas.itemconfig(self.green_light, fill='gray')
             self.warning_message.set('Outer Race Fault')
 
+    def select_data_layout(self):
+        button_texts = ['Healthy', 'Ball Fault', 'Inner Race Fault', 'Outer Race Fault']
+        button_values = [0, 1, 2, 3]
+
+        button_frame = tk.Frame(self.select_data_frame, background='white')
+        button_frame.pack(anchor='c')
+
+        for text, value in zip(button_texts, button_values):
+            # Create a container frame for each radiobutton
+            button_container = tk.Frame(button_frame, bg='white')
+            button_container.pack(side=tk.LEFT, padx=5)
+
+            # Create the underline frame
+            underline = tk.Frame(button_container, bg=self.colors[value], height=4, width=100)
+            underline.pack(side=tk.BOTTOM, fill=tk.X)
+
+            # Create the radiobutton
+            radiobutton = tk.Radiobutton(button_container, text=text, variable=self.type_of_data, value=value,
+                                         bg='white', fg='black', indicatoron=1)
+            radiobutton.pack(side=tk.TOP, fill=tk.X)
 
     def right_window_layout(self):
         # set up recurrence plot figure
@@ -249,7 +285,6 @@ class dispTab:
             recurrence_matrix = self.D_norm < self.epsilon
             return recurrence_matrix
 
-
     def calculate_rqa_measures_pyrqa(self):
         time_series = TimeSeries(self.data, embedding_dimension=self.m, time_delay=self.T)
         settings = Settings(
@@ -280,6 +315,8 @@ class dispTab:
         self.LAM.append(result.laminarity)
         self.TT.append(result.trapping_time)
 
+        self.type_of_data_history.append(self.type_of_data.get())
+
     def update_rqa_plot(self):
         # set up figure
         self.fig_rqa.clear()
@@ -290,13 +327,19 @@ class dispTab:
 
         self.calculate_rqa_measures_pyrqa()
 
+        rqa1_index = self.settings_tab.param_options.index(self.settings_tab.param1.get())
+        rqa2_index = self.settings_tab.param_options.index(self.settings_tab.param2.get())
+
+        rqa_lists = [self.RR, self.DET, self.L, self.Lmax, self.DIV, self.ENTR, self.LAM, self.TT]
+
         # plot recurrence matrix
-        ax_rqa_func.scatter(self.RR, self.DET)
+        colors = [self.colors[value] for value in self.type_of_data_history]
+        ax_rqa_func.scatter(rqa_lists[rqa1_index], rqa_lists[rqa2_index], c=colors)
 
         # self.fig_rp.colorbar(im, ax=ax_rp_func)
         ax_rqa_func.set_title("RQA Measures")
-        ax_rqa_func.set_xlabel("Recurrence Rate")
-        ax_rqa_func.set_ylabel("Determinism")
+        ax_rqa_func.set_xlabel(self.settings_tab.param1.get())
+        ax_rqa_func.set_ylabel(self.settings_tab.param2.get())
 
         # display rp
         self.canvas_rqa.draw()
@@ -323,21 +366,16 @@ class dispTab:
         else:
             self.consecutive_fault_count = 0
 
-        print(self.fault_detected)
-        print('consecutive faults: ', self.consecutive_fault_count)
-        print('fault memory: ', self.fault_memory)
-
         if self.fault_detected != 0 and self.consecutive_fault_count >= 2 and self.fault_detected != self.recorded_fault_record:
             fault_type = ['Inner Race', 'Ball', 'Outer Race']
             fault_index = int(self.fault_detected) - 1
             self.fault_log_box.insert(tk.END,
-                                      f'Fault Detected: {fault_type[fault_index]} Fault at {self.detection_time} s' + '\n')
+                                      f'Fault Detected at {self.detection_time} s: {fault_type[fault_index]} Fault' + '\n')
             self.fault_log_box.yview(tk.END)  # Scroll to the end
             self.fault_count += 1
             self.recorded_fault_record = self.fault_detected
         self.fault_memory = self.fault_detected
         # add detected fault to log
-
 
     def start_func(self):
         if not self.is_running:
@@ -357,4 +395,23 @@ class dispTab:
         self.canvas_data.draw()
         self.canvas_rp.draw()
         self.canvas_rqa.draw()
-        self.__init__()
+
+        # reset relevant variables
+        self.RR = []
+        self.DET = []
+        self.L = []
+        self.Lmax = []
+        self.DIV = []
+        self.ENTR = []
+        self.LAM = []
+        self.TT = []
+
+        # variables to manage fault detection
+        self.fault_detected = 0
+        self.fault_memory = 0
+        self.fault_count = 0
+        self.fault_log_box.delete('1.0', tk.END)
+
+        # variables to manage data type
+        self.type_of_data_history = []
+        self.colors = ['green', 'blue', 'red', 'orange']

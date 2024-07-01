@@ -20,7 +20,7 @@ class LivePlotApp:
         self.notebook = ttk.Notebook(root)
         self.notebook.pack(expand=True, fill='both')
         self.display_tab = dispTab(self.root, self.notebook)
-        self.settings_tab = settingsTab(self.root, self.notebook)
+        # self.settings_tab = settingsTab(self.root, self.notebook)
 
 
 

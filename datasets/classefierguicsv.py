@@ -11,6 +11,8 @@ import pandas as pd
 file1 = pd.read_csv('/Users/martina/Documents/GitHub/Recurrence_project/Classifier/data/normal_3hp_1730rpm.csv')
 file2 = pd.read_csv('/Users/martina/Documents/GitHub/Recurrence_project/Classifier/data/.007_ball.csv')
 file3 = pd.read_csv('/Users/martina/Documents/GitHub/Recurrence_project/Classifier/data/.007_inner_race.csv')
+file4 = pd.read_csv('/Users/martina/Documents/GitHub/Recurrence_project/Classifier/data/.007_centerd_6.csv')
+
 #file4 = pd.read_csv('file4.csv')  # not used in this example, but loaded anyway
 
 # Select the desired points from each file
