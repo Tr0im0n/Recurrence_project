@@ -69,17 +69,17 @@ def main():
     classifier = train_multiclass_classifier(X_train_scaled, y_train)
 
     # Save classifier and scaler
-    dump(classifier, 'classifier.joblib')
-    dump(scaler, 'scaler.joblib')
+    # dump(classifier, 'classifier.joblib')
+    # dump(scaler, 'scaler.joblib')
 
-    # Manual testing on each fault type
-    for i, (fault_data, fault_name) in enumerate(zip(data, fault_names)):
-        test_preds = manual_test(classifier, scaler, fault_data, l, delay, feature_func2, train_samples)
-        accuracy = np.mean(test_preds == i)
-        print(f"Accuracy on {fault_name}: {accuracy:.4f}")
+    # # Manual testing on each fault type
+    # for i, (fault_data, fault_name) in enumerate(zip(data, fault_names)):
+    #     test_preds = manual_test(classifier, scaler, fault_data, l, delay, feature_func2, train_samples)
+    #     accuracy = np.mean(test_preds == i)
+    #     print(f"Accuracy on {fault_name}: {accuracy:.4f}")
 
     # Test on Frankenstein dataset
-    # classifier = load('GUI classifier/classifier.joblib')
+    classifier = load('classifier.joblib')
     frankendata = load_data(frankenstein_path, 'point', 243000)
     # frankendata_max = frankendata.max()
     # frankendata = frankendata / frankendata_max
