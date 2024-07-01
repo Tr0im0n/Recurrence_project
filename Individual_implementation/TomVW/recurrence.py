@@ -298,7 +298,7 @@ def compare_samples_vs_time(max_size: int = 10_001, m: int = 5, t: int = 2):
     time_obj = TimeObject()
     my_signal = composite_signal(max_size, ((0.01, 4), (0.02, 2), (0.04, 1)))
     step_size = 500
-    sizes = np.arange(5_000, max_size, step_size)
+    sizes = np.arange(step_size, max_size, step_size)
     funcs = [
         # view_cdist,
         # stride_cdist,
