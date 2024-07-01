@@ -41,14 +41,17 @@ class introTab:
         self.display_frame = ttk.Frame(self.intro_tab)
         self.display_frame.place(relx=0.5, rely=0, relwidth=0.5, relheight=1)
 
-        self.embedding_param_frame = ttk.Frame(self.command_frame)
-        self.embedding_param_frame.pack()
-
         self.sine_frame = ttk.Frame(self.command_frame)
-        self.sine_frame.pack()
+        self.sine_frame.pack(pady=20, padx=40)
 
         self.modifications_frame = ttk.Frame(self.command_frame)
-        self.modifications_frame.pack()
+        self.modifications_frame.pack(pady=20)
+
+        self.embedding_param_frame = ttk.Frame(self.command_frame)
+        self.embedding_param_frame.pack(pady=20)
+
+        self.plot_button = ttk.Button(self.command_frame, text='plot', command=self.plot)
+        self.plot_button.pack()
 
         self.create_param_frame()
         self.create_sine_frame()
@@ -58,44 +61,54 @@ class introTab:
         self.plot_rp()
 
     def create_param_frame(self):
+        # set title
+        self.param_title = ttk.Label(self.embedding_param_frame, text='Set Embedding Parameters', font=('Arial', 24))
+        self.param_title.grid(row=0, column=0, columnspan=3, padx=10, pady=10)
+
         # Creating Tkinter variables
-        self.embedding_dim_var = tk.IntVar(value=15)  # Default value as midpoint
-        self.time_delay_var = tk.IntVar(value=5)  # Default value as midpoint
-        self.threshold_var = tk.DoubleVar(value=0.5)  # Default value as midpoint
+        self.embedding_dim_var = tk.IntVar(value=10)
+        self.time_delay_var = tk.IntVar(value=3)
+        self.threshold_var = tk.DoubleVar(value=0.1)
 
         # Embedding Dimensions Scale
         self.embedding_scale = ttk.Scale(self.embedding_param_frame, from_=0, to=30, orient='horizontal', variable=self.embedding_dim_var,
                                          command=self.update_value)
-        self.embedding_scale.grid(row=0, column=1, padx=10, pady=10)
-        ttk.Label(self.embedding_param_frame, text="Embedding Dimensions:").grid(row=0, column=0)
+        self.embedding_scale.grid(row=1, column=1, padx=10, pady=10)
+        ttk.Label(self.embedding_param_frame, text="Embedding Dimensions:").grid(row=1, column=0)
 
         # Time Delay Scale
         self.time_delay_scale = ttk.Scale(self.embedding_param_frame, from_=0, to=10, orient='horizontal', variable=self.time_delay_var,
                                           command=self.update_value)
-        self.time_delay_scale.grid(row=1, column=1, padx=10, pady=10)
-        ttk.Label(self.embedding_param_frame, text="Time Delay:").grid(row=1, column=0)
+        self.time_delay_scale.grid(row=2, column=1, padx=10, pady=10)
+        ttk.Label(self.embedding_param_frame, text="Time Delay:").grid(row=2, column=0)
 
         # Threshold Scale
         self.threshold_scale = ttk.Scale(self.embedding_param_frame, from_=0.0, to=1.0, orient='horizontal', variable=self.threshold_var,
                                          command=self.update_value)
-        self.threshold_scale.grid(row=2, column=1, padx=10, pady=10)
-        ttk.Label(self.embedding_param_frame, text="Threshold:").grid(row=2, column=0)
+        self.threshold_scale.grid(row=3, column=1, padx=10, pady=10)
+        ttk.Label(self.embedding_param_frame, text="Threshold:").grid(row=3, column=0)
 
         # This will update the label showing the current value of the scales
         self.value_label = ttk.Label(self.embedding_param_frame, text="")
-        self.value_label.grid(row=3, column=0, columnspan=2)
+        self.value_label.grid(row=4, column=0, columnspan=2)
+
+        self.update_value()
 
     def update_value(self, event=None):
         current_values = f"Embedding: {self.embedding_dim_var.get()}, Delay: {self.time_delay_var.get()}, Threshold: {self.threshold_var.get():.2f}"
         self.value_label.configure(text=current_values)
 
     def create_sine_frame(self):
+        # set title
+        self.sine_title = ttk.Label(self.sine_frame, text='Construct Function', font=('Arial', 24))
+        self.sine_title.grid(row=0, column=0, padx=10, pady=10)
+
         self.sin1_active = tk.BooleanVar(value=True)
         self.sin2_active = tk.BooleanVar(value=False)
         self.sin3_active = tk.BooleanVar(value=False)
 
         self.amplitude_var1 = tk.DoubleVar(value=1)
-        self.frequency_var1 = tk.DoubleVar(value=1)
+        self.frequency_var1 = tk.DoubleVar(value=5)
         self.phase_var1 = tk.DoubleVar(value=0)
         self.vertical_var1 = tk.DoubleVar(value=0)
 
@@ -197,8 +210,6 @@ class introTab:
         self.get_spike_box = ttk.Checkbutton(spike_row, variable=self.get_spike)
         self.get_spike_box.pack(side='left', pady=(10, 0))
 
-        self.plot_button = ttk.Button(self.intro_tab, text='plot', command=self.plot)
-        self.plot_button.pack()
 
         #modify signal with noise
         noise_frame = ttk.Frame(self.modifications_frame)
@@ -243,16 +254,16 @@ class introTab:
         sin3 = self.amplitude_var3.get() * np.sin(self.frequency_var3.get() * xs + self.phase_var3.get()) + self.vertical_var3.get()
 
         self.data = (sin1*int(self.sin1_active.get())) + (sin2*int(self.sin2_active.get())) + (sin3*int(self.sin3_active.get()))
+        self.amplitude = round((np.max(self.data) - np.min(self.data)) / 2, 2)
 
         # add spike
         if self.get_spike.get() == True:
             spike_position = np.random.randint(100, len(xs) - 100)  # Random position for the spike
-            spike_amplitude = 2 * np.max(self.data)  # Amplitude of the spike
+            spike_amplitude = 2 * self.amplitude  # Amplitude of the spike
             self.data[spike_position:spike_position + 10] += spike_amplitude  # Introduce the spike
 
         # add noise
-        max_amp = np.max(self.data)
-        noise_amp = max_amp / (10 ** (self.noise_level_var.get() / 20))
+        noise_amp = self.amplitude / (10 ** (self.noise_level_var.get() / 20))
         self.noise = np.random.uniform(-noise_amp, noise_amp, (len(self.data),))
 
         self.data += self.noise

@@ -93,6 +93,7 @@ def pyrqa(timeseries, m, T, epsilon):
                      result.entropy_diagonal_lines,
                      result.laminarity])
 
+
 def false_nearest_neighbors(timeseries, max_dim=100, tau=1, R_tol=15, A_tol=2):
     """
     Compute the False Nearest Neighbors to estimate the embedding dimension.

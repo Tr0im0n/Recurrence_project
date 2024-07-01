@@ -233,9 +233,9 @@ class dispTab:
         self.canvas_rp.draw()
 
     def calculate_recurrence_plot(self):
-        self.m = 3
+        self.m = 5
         self.T = 2
-        self.epsilon = 0.1
+        self.epsilon = 0.3
 
         # embed time series
         self.num_vectors = len(self.data) - (self.m - 1) * self.T
@@ -306,14 +306,35 @@ class dispTab:
         self.fault_detected = self.classifier.predict(self.rqa_measures_scaled.reshape(1, -1))
         self.detection_time = round(time() - self.start_time, 2)
 
-        # add new faults to fault log
-        if self.fault_detected != 0 and self.fault_detected != self.fault_memory:
+        # Initialize counter for number of consecutive faults detected
+        if not hasattr(self, 'consecutive_fault_count'):
+            self.consecutive_fault_count = 0
+
+        # Initialize variable to track type of last recorded fault
+        if not hasattr(self, 'recorded_fault_record'):
+            self.recorded_fault_record = 0
+
+        # Check for faults and update the counter
+        if self.fault_detected in [1, 2, 3]:
+            if self.fault_detected == self.fault_memory:
+                self.consecutive_fault_count += 1
+            else:
+                self.consecutive_fault_count = 1
+        else:
+            self.consecutive_fault_count = 0
+
+        print(self.fault_detected)
+        print('consecutive faults: ', self.consecutive_fault_count)
+        print('fault memory: ', self.fault_memory)
+
+        if self.fault_detected != 0 and self.consecutive_fault_count >= 2 and self.fault_detected != self.recorded_fault_record:
             fault_type = ['Inner Race', 'Ball', 'Outer Race']
             fault_index = int(self.fault_detected) - 1
             self.fault_log_box.insert(tk.END,
                                       f'Fault Detected: {fault_type[fault_index]} Fault at {self.detection_time} s' + '\n')
             self.fault_log_box.yview(tk.END)  # Scroll to the end
             self.fault_count += 1
+            self.recorded_fault_record = self.fault_detected
         self.fault_memory = self.fault_detected
         # add detected fault to log
 

@@ -38,6 +38,8 @@ class funcTab:
             "TT": 'TBD'
         }
 
+        self.start_index = 0  # keeps track of points past 1000
+
         # create function tab
         self.function_tab = tk.Frame(notebook)
         notebook.add(self.function_tab, text='Plotting Functions')
@@ -361,6 +363,11 @@ class funcTab:
 
             self.xyzs = np.append(self.xyzs, [new_point], axis=0)
 
+            # drop first point if length > 1000
+            if len(self.xyzs) > 1000:
+                self.xyzs = self.xyzs[1:]
+                self.start_index += 1
+
         # plot phase space of function
         self.fig_ps_func.clear()
         ax_ps = self.fig_ps_func.add_subplot(111, projection='3d')
@@ -390,7 +397,8 @@ class funcTab:
             # plot time series of activated component
             self.fig_comp_func.clear()
             ax_comp = self.fig_comp_func.add_subplot(111)
-            ax_comp.plot(self.x, lw=0.5)
+            self.x_values = np.arange(self.start_index, self.start_index + len(self.xyzs))
+            ax_comp.plot(self.x_values, self.x, lw=0.5)
             ax_comp.set_title(f"{coord_key[true_index]}-coordinate")
             ax_comp.set_xlabel("Time")
             ax_comp.set_ylabel(f"{coord_key[true_index]}-coordinate")
@@ -429,7 +437,7 @@ class funcTab:
                         data2 = data
                         rp = self.calculate_cross_recurrence_plot(data1, data)
 
-            # self.calculate_rqa(rp)
+            self.calculate_rqa(rp)
             self.update_recurrence_plot_figure(rp, 'Cross Recurrence')
 
 
@@ -525,8 +533,12 @@ class funcTab:
         self.fig_rp_func.clear()
         ax_rp_func = self.fig_rp_func.add_subplot(111)
 
+        # keep track of true index after 1000
+        extent = [self.start_index, self.start_index + recurrence_matrix.shape[1],
+                  self.start_index, self.start_index + recurrence_matrix.shape[0]]
+
         # plot recurrence matrix
-        im = ax_rp_func.imshow(recurrence_matrix, cmap='binary', origin='lower')
+        im = ax_rp_func.imshow(recurrence_matrix, cmap='binary', origin='lower', extent=extent)
         self.fig_rp_func.colorbar(im, ax=ax_rp_func)
         # ax_rp_func.set_title(f"{type} Plot")
         ax_rp_func.set_xlabel("Vector Index")
@@ -564,6 +576,7 @@ class funcTab:
         self.canvas_ps_func.draw()
         self.canvas_comp_func.draw()
         self.canvas_rp_func.draw()
+        self.start_idnex = 0
         self.rqa_measures = {
             "RR": 'TBD',
             "DET": 'TBD',

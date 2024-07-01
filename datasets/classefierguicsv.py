@@ -19,16 +19,16 @@ points = []
 sources = []
 
 points.extend(file1.iloc[50000:100000, 0].tolist())
-sources.extend(['1'] * len(file1.iloc[50000:100000, 0]))
+sources.extend(['0'] * len(file1.iloc[50000:100000, 0]))
 
 points.extend(file2.iloc[55000:100000, 0].tolist())
-sources.extend(['2'] * len(file2.iloc[55000:100000, 0]))
+sources.extend(['1'] * len(file2.iloc[55000:100000, 0]))
 
 points.extend(file1.iloc[100000:200000, 0].tolist())
-sources.extend(['1'] * len(file1.iloc[100000:200000, 0]))
+sources.extend(['0'] * len(file1.iloc[100000:200000, 0]))
 
 points.extend(file3.iloc[52000:100000, 0].tolist())
-sources.extend(['3'] * len(file3.iloc[52000:100000, 0]))
+sources.extend(['2'] * len(file3.iloc[52000:100000, 0]))
 
 # Create a new DataFrame with the selected points
 df = pd.DataFrame({'point': points, 'source': sources})

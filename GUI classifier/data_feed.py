@@ -25,5 +25,5 @@ def make_window(path, time, window_size):
     data_range_start = int(current_index - window_size)
     data_range_stop = int(current_index)
 
-    return norm_data[data_range_start:data_range_stop], labels[data_range_start:data_range_stop]
+    return data[data_range_start:data_range_stop], labels[data_range_start:data_range_stop]
 
