@@ -11,14 +11,13 @@ def noise_amp_from_db(sine_tuples: any, db_noise: float):
     return max_amp / (10 ** (db_noise / 20))
 
 
-def noise(length: int = 100, amplitude: float = None, *, noise_type: str = None):
+def noise(length: int = 100, amplitude: float = 1.0, *, noise_type: str = None):
     """
     :param amplitude:
     :param length:
     :param noise_type: Uniform or Normal
     :return:
     """
-    amplitude = 0.1 if amplitude is None else amplitude
     if (noise_type is None) or ("uniform" == noise_type):
         return np.random.uniform(-amplitude, amplitude, (length,))
     elif "normal" == noise_type:

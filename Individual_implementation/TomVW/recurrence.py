@@ -237,6 +237,7 @@ def view_cdist_threshold(signal: np.ndarray, m: int = 5, t: int = 1, epsilon: fl
     indices = np.arange(new_shape)[:, None] + np.arange(0, m * t, t)
     result = signal[indices]
     distance_matrix = cdist(result, result, metric='euclidean')
+    epsilon *= np.max(distance_matrix)  # Added in quite late
     return distance_matrix < epsilon
 
 
@@ -256,6 +257,18 @@ def view_cdist_threshold_ip(signal: np.ndarray, m: int = 5, t: int = 1, epsilon:
     distance_matrix[distance_matrix < epsilon] = 0
     distance_matrix[distance_matrix >= epsilon] = 1
     return distance_matrix
+
+
+def cross_recurrence(signal1: np.ndarray, signal2: np.ndarray, m: int = 5, t: int = 1, epsilon: float = 0.1):
+    if not len(signal1) == len(signal2):
+        raise ValueError("Arrays must be of the same length")
+    new_shape = signal1.shape[0] - (m - 1) * t
+    indices = np.arange(new_shape)[:, None] + np.arange(0, m * t, t)
+    result1 = signal1[indices]
+    result2 = signal2[indices]
+    distance_matrix = cdist(result1, result2, metric='euclidean')
+    epsilon *= np.max(distance_matrix)  # Added in quite late
+    return distance_matrix < epsilon
 
 
 def compare_all(n_samples: int = 8_000, m: int = 5):
