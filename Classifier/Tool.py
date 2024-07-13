@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
 
 
-
+""" 
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.svm import SVC
@@ -87,11 +87,11 @@ from matplotlib.lines import Line2D
 
 def main():
     # Constants (same as before)
-    m = 3
+    m = 5
     T = 2
-    epsilon = 0.5
+    epsilon = 0.3
     l = 1000
-    delay = 100
+    delay = 200
     num_samples = 50000
     train_samples = 30000
 
@@ -181,11 +181,11 @@ def main():
 if __name__ == "__main__":
     main()
 
+ """
 
 
 
 
-"""
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -202,8 +202,7 @@ def calculate_windowed_rqa_measures(data, window_size, delay, m, T, epsilon):
     for series in data:
         windows = sliding_window_view(series, window_size, delay)
         for window in windows:
-            rp = calc_recurrence_plot(window, m, T, epsilon)
-            measures = calc_rqa_measures(rp)
+            measures = pyrqa(window, m, T, epsilon)
             all_measures.append(measures)
     return np.array(all_measures)
 def plot_distributions(rqa_df):
@@ -240,10 +239,10 @@ def plot_boxplots(rqa_df):
 
 def main():
     # Parameters
-    m, T, epsilon = 20, 2, 0.75
-    num_samples = 25000
+    m, T, epsilon = 5, 2, 0.3
+    num_samples = 50000
     window_size = 1000
-    delay = 100
+    delay = 200
 
     # Load data
     data_paths = [
@@ -296,5 +295,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-"""
