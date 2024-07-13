@@ -158,6 +158,14 @@ def threshold_ip(distance_matrix: np.ndarray, epsilon: float = 0.1):
     return distance_matrix
 
 
+def threshold_ip2(distance_matrix: np.ndarray, epsilon: float = 0.1):
+    """ ip stands for in place, shouldn't need the return """
+    indices = distance_matrix < epsilon
+    distance_matrix[indices] = 0
+    distance_matrix[~indices] = 1
+    return distance_matrix
+
+
 def compare_threshold(max_size: int = 10_001):
     time_obj = TimeObject()
     my_signal = composite_signal(max_size, ((0.001, 4), (0.002, 2), (0.004, 1)))
@@ -165,7 +173,8 @@ def compare_threshold(max_size: int = 10_001):
     sizes = np.arange(step_size, max_size, step_size)
     funcs = [threshold_ip,
              threshold_cast,
-             threshold]
+             threshold,
+             threshold_ip2]
     n_funcs = len(funcs)
     time_obj.new("setup")
     rp = view_cdist(my_signal)

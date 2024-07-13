@@ -14,10 +14,7 @@ def lorenz(xyz, *, s=10, r=28, b=2.667):
     z_dot = x*y - b*z
     return np.array([x_dot, y_dot, z_dot])
 
-def get_xyzs_lorenz():
-    dt = 0.01
-    num_steps = 2500
-
+def get_xyzs_lorenz(num_steps: int = 2500, dt: float = 0.01, show_plot: bool = True):
     xyzs = np.empty((num_steps + 1, 3))  # Need one more for the initial values
     xyzs[0] = (1., 1., 1.)  # Set initial values
     # Step through "time", calculating the partial derivatives at the current point
@@ -25,6 +22,8 @@ def get_xyzs_lorenz():
     for i in range(num_steps):
         xyzs[i + 1] = xyzs[i] + lorenz(xyzs[i]) * dt
 
+    if not show_plot:
+        return xyzs
     # Plot
     ax = plt.figure().add_subplot(projection='3d')
 
@@ -105,8 +104,10 @@ def RP_one_coord(xyzs, coord=0):
     # plt.ylabel('Vector Index')
     # plt.show()
 
-xyzs = get_xyzs_lorenz()
-RP_pyts_one_coord(xyzs, 0)
-RP_one_coord(xyzs, 0)
+
+if __name__ == "__main__":
+    xyzs = get_xyzs_lorenz()
+    RP_pyts_one_coord(xyzs, 0)
+    RP_one_coord(xyzs, 0)
 
 
