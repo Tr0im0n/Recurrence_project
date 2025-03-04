@@ -10,6 +10,11 @@ from pyrqa.neighbourhood import FixedRadius
 from pyrqa.computation import RQAComputation
 from pyrqa.metric import EuclideanMetric
 
+def view_cdist(signal: np.ndarray, m: int = 5, t: int = 1):
+    new_shape = signal.shape[0] - (m - 1) * t
+    indices = np.arange(new_shape)[:, None] + np.arange(0, m * t, t)    # new_shape x m
+    result = signal[indices]    # just a view
+    return cdist(result, result, metric='euclidean')    # new_shape x new_shape
 def calc_recurrence_plot(timeseries: np.ndarray, m: int, T: int, epsilon: float = 0.1, use_fnn: bool = False):
     if use_fnn:
         m = false_nearest_neighbors(timeseries, tau = T)
